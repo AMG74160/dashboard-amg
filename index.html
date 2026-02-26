@@ -291,10 +291,20 @@ function buildDashboard(data) {
     else if (d.statut==='Spontané') nbSpontane++;
 
     // 🆕 v3.3.2 — Ventilation par source (plus de double-comptage)
-    if (d.mtManuel > 0) sourceTotals["Manuel"] = (sourceTotals["Manuel"]||0) + d.mtManuel;
-    if (d.mtHelloAsso > 0) sourceTotals["HelloAsso"] = (sourceTotals["HelloAsso"]||0) + d.mtHelloAsso;
-    if (d.mtVirement > 0) sourceTotals["Virement"] = (sourceTotals["Virement"]||0) + d.mtVirement;
-    if (d.mtPayPal > 0) sourceTotals["PayPal"] = (sourceTotals["PayPal"]||0) + d.mtPayPal;
+    // Fallback: si les champs de ventilation ne sont pas présents (ancienne API), utiliser l'ancien split
+    const hasVentilation = (d.mtManuel !== undefined || d.mtHelloAsso !== undefined || d.mtVirement !== undefined || d.mtPayPal !== undefined);
+    if (hasVentilation) {
+      if (d.mtManuel > 0) sourceTotals["Manuel"] = (sourceTotals["Manuel"]||0) + d.mtManuel;
+      if (d.mtHelloAsso > 0) sourceTotals["HelloAsso"] = (sourceTotals["HelloAsso"]||0) + d.mtHelloAsso;
+      if (d.mtVirement > 0) sourceTotals["Virement"] = (sourceTotals["Virement"]||0) + d.mtVirement;
+      if (d.mtPayPal > 0) sourceTotals["PayPal"] = (sourceTotals["PayPal"]||0) + d.mtPayPal;
+    } else {
+      // Ancien mode (avant v3.3.2) — double-comptage possible mais au moins ça affiche
+      (d.sources||'').split('+').forEach(s => {
+        s=s.trim();
+        if (s && s!=='Aucun') sourceTotals[s] = (sourceTotals[s]||0) + d.montantRecu;
+      });
+    }
 
     if (d.datesPaiement && d.datesPaiement.trim()) {
       const parts = d.datesPaiement.split(',').map(s=>s.trim()).filter(Boolean);

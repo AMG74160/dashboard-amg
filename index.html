@@ -164,21 +164,27 @@
 <!-- 🔒 ÉCRAN DE LOGIN -->
 <div id="loginScreen" style="display:flex; justify-content:center; align-items:center; min-height:100vh; position:relative; z-index:10;">
   <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:40px; width:100%; max-width:420px; text-align:center;">
-    <div style="font-size:48px; margin-bottom:16px;">🔐</div>
+    <div style="font-size:48px; margin-bottom:16px;">🕌</div>
     <h2 style="font-size:22px; font-weight:700; background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px;">Dashboard Dons AMG</h2>
-    <p style="color:var(--text-muted); font-size:13px; margin-bottom:28px;">Saisissez le token d'accès pour continuer</p>
-    <input type="password" id="tokenInput" placeholder="Token d'accès..."
+    <p style="color:var(--text-muted); font-size:13px; margin-bottom:28px;">Connectez-vous pour accéder au tableau de bord</p>
+    <input type="text" id="loginInput" placeholder="Identifiant (admin uniquement)"
+      autocomplete="username"
+      style="width:100%; padding:12px 16px; background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-primary); font-family:var(--font-main); font-size:14px; outline:none; margin-bottom:12px; transition:border-color 0.2s;"
+      onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border)'" />
+    <input type="password" id="passwordInput" placeholder="Mot de passe"
+      autocomplete="current-password"
       style="width:100%; padding:12px 16px; background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-primary); font-family:var(--font-mono); font-size:14px; outline:none; margin-bottom:16px; transition:border-color 0.2s;"
       onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border)'" />
     <button id="loginBtn" onclick="attemptLogin()"
       style="width:100%; padding:12px; background:var(--gradient-blue); border:none; border-radius:var(--radius); color:#fff; font-family:var(--font-main); font-size:14px; font-weight:600; cursor:pointer; transition:opacity 0.2s;"
       onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-      Accéder au dashboard
+      Se connecter
     </button>
+    <p style="color:var(--text-muted); font-size:11px; margin-top:16px;">Bureau : laissez l'identifiant vide</p>
     <div id="loginError" style="color:var(--accent-red); font-size:13px; margin-top:14px; display:none;"></div>
     <div id="loginLoading" style="color:var(--text-muted); font-size:13px; margin-top:14px; display:none;">
       <div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto 8px;"></div>
-      Vérification...
+      Connexion...
     </div>
   </div>
 </div>
@@ -193,49 +199,57 @@
 
 <script>
 const API_URL = 'https://script.google.com/macros/s/AKfycbxwjvKD1dpxuOzhnzWIMzgwz3LV5k58-Qy5jgJui6umdJdE12Bm-BhW_6O4fIibceK_/exec';
-let TOKEN = ''; // 🔒 Token saisi par l'utilisateur, jamais en dur
+let AUTH_PARAMS = ''; // 🔒 Paramètres d'auth stockés en mémoire
+let USER_ROLE = '';   // admin ou bureau
 
-// 🔒 LOGIN - Valider le token en appelant l'API
+// 🔒 LOGIN
 async function attemptLogin() {
-  const input = document.getElementById('tokenInput');
+  const loginInput = document.getElementById('loginInput');
+  const passInput = document.getElementById('passwordInput');
   const errDiv = document.getElementById('loginError');
   const loadDiv = document.getElementById('loginLoading');
   const btn = document.getElementById('loginBtn');
-  const token = input.value.trim();
+  const login = loginInput.value.trim();
+  const password = passInput.value.trim();
 
   errDiv.style.display = 'none';
-  if (!token) { errDiv.textContent = 'Veuillez saisir le token.'; errDiv.style.display = 'block'; return; }
+  if (!password) { errDiv.textContent = 'Veuillez saisir le mot de passe.'; errDiv.style.display = 'block'; return; }
 
   btn.disabled = true; btn.style.opacity = '0.5';
   loadDiv.style.display = 'block';
 
   try {
-    const resp = await fetch(`${API_URL}?action=dashboard&token=${encodeURIComponent(token)}`);
+    // Construire les paramètres d'auth
+    let authStr = `password=${encodeURIComponent(password)}`;
+    if (login) authStr += `&login=${encodeURIComponent(login)}`;
+
+    const resp = await fetch(`${API_URL}?action=dashboard&${authStr}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const json = await resp.json();
-    if (json.status === 'error') throw new Error(json.message || 'Token invalide');
-    if (json.status !== 'success' || !json.data) throw new Error('Token invalide ou erreur API');
+    if (json.status === 'error') throw new Error(json.message || 'Identifiants invalides');
+    if (json.status !== 'success' || !json.data) throw new Error('Identifiants invalides');
 
-    // ✅ Token valide → stocker en mémoire et afficher le dashboard
-    TOKEN = token;
+    // ✅ Connexion réussie
+    AUTH_PARAMS = authStr;
+    USER_ROLE = json.role || 'bureau';
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     buildDashboard(json.data);
   } catch (e) {
-    errDiv.textContent = '❌ ' + (e.message.includes('Token') ? 'Token invalide' : e.message);
+    errDiv.textContent = '❌ ' + (e.message.includes('invalide') ? 'Identifiants incorrects' : e.message);
     errDiv.style.display = 'block';
-    input.value = '';
-    input.focus();
+    passInput.value = '';
+    passInput.focus();
   } finally {
     btn.disabled = false; btn.style.opacity = '1';
     loadDiv.style.display = 'none';
   }
 }
 
-// Permettre Entrée pour valider
-document.getElementById('tokenInput').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
-// Focus auto sur le champ token
-document.getElementById('tokenInput').focus();
+// Entrée pour valider depuis les deux champs
+document.getElementById('loginInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('passwordInput').focus(); });
+document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
+document.getElementById('passwordInput').focus();
 
 const fmt = (n) => n.toLocaleString('fr-FR', {minimumFractionDigits:0, maximumFractionDigits:0});
 const fmtE = (n) => fmt(n) + ' €';
@@ -268,7 +282,7 @@ function sourceIcon(src) {
 
 async function loadData() {
   try {
-    const resp = await fetch(`${API_URL}?action=dashboard&token=${encodeURIComponent(TOKEN)}`);
+    const resp = await fetch(`${API_URL}?action=dashboard&${AUTH_PARAMS}`);
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const json = await resp.json();
     if (json.status !== 'success' || !json.data) throw new Error(json.message || 'Erreur API');
@@ -373,6 +387,7 @@ function buildDashboard(data) {
         <div class="status-dot"></div>
         <span>MAJ : ${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
         <span class="count-badge">${totalDonateurs} donateurs</span>
+        <span class="count-badge" style="${USER_ROLE==='admin'?'background:rgba(74,222,128,0.12);color:var(--accent-green)':'background:rgba(167,139,250,0.12);color:var(--accent-purple)'}">${USER_ROLE==='admin'?'🔑 Admin':'👁 Bureau'}</span>
         <button class="refresh-btn" onclick="loadData().then(d=>buildDashboard(d))">↻ Actualiser</button>
       </div>
     </div>

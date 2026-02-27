@@ -253,6 +253,8 @@ document.getElementById('passwordInput').focus();
 
 const fmt = (n) => n.toLocaleString('fr-FR', {minimumFractionDigits:0, maximumFractionDigits:0});
 const fmtE = (n) => fmt(n) + ' €';
+const isAdmin = () => USER_ROLE === 'admin';
+const anonymize = (name) => isAdmin() ? name : '••••••';
 const MOIS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 const MOIS_LONG = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
@@ -445,7 +447,7 @@ function buildDashboard(data) {
         <div class="section-title"><span>🔔</span> Alertes prioritaires <span class="count-badge">${allAlerts.length}</span></div>
         <div class="alerts-list">
           ${allAlerts.length===0?'<div class="empty-state">✅ Aucune alerte</div>':
-            allAlerts.map(a=>`<div class="alert-item ${a.type}"><div class="alert-icon">${a.type==='critical'?'🔴':'🟠'}</div><div class="alert-info"><div class="alert-name">${a.prenom} ${a.nom}</div><div class="alert-detail">${a.detail}</div></div><div class="alert-amount ${a.type==='warning'?'warning-color':''}">${fmtE(a.montant)}</div></div>`).join('')}
+            allAlerts.map(a=>`<div class="alert-item ${a.type}"><div class="alert-icon">${a.type==='critical'?'🔴':'🟠'}</div><div class="alert-info"><div class="alert-name">${anonymize(a.prenom)} ${anonymize(a.nom)}</div><div class="alert-detail">${a.detail}</div></div><div class="alert-amount ${a.type==='warning'?'warning-color':''}">${fmtE(a.montant)}</div></div>`).join('')}
         </div>
       </div>
     </div>
@@ -471,14 +473,15 @@ function buildDashboard(data) {
         <div class="section-title"><span>⏰</span> Derniers paiements reçus <span class="count-badge">${top15.length}</span></div>
         <div class="timeline" style="max-height:360px;overflow-y:auto;">
           ${top15.length===0?'<div class="empty-state">Aucun paiement avec date</div>':
-            top15.map(p=>`<div class="timeline-item"><div class="timeline-date">${p.dateStr}</div><div><div class="timeline-name">${p.prenom} ${p.nom}</div><div class="timeline-source">${sourceIcon(p.source)}</div></div><div class="timeline-amount">+${fmtE(Math.round(p.montant))}</div></div>`).join('')}
+            top15.map(p=>`<div class="timeline-item"><div class="timeline-date">${p.dateStr}</div><div><div class="timeline-name">${anonymize(p.prenom)} ${anonymize(p.nom)}</div><div class="timeline-source">${sourceIcon(p.source)}</div></div><div class="timeline-amount">+${fmtE(Math.round(p.montant))}</div></div>`).join('')}
         </div>
       </div>
     </div>
 
     <div class="section-divider"></div>
 
-    <!-- DONUT + SOURCES -->
+    ${isAdmin() ? `
+    <!-- DONUT + SOURCES (admin only) -->
     <div class="grid-2">
       <div class="card">
         <div class="section-title"><span>📋</span> Répartition par statut</div>
@@ -500,7 +503,7 @@ function buildDashboard(data) {
 
     <div class="section-divider"></div>
 
-    <!-- TABLE -->
+    <!-- TABLE (admin only) -->
     <div class="card">
       <div class="section-title"><span>📝</span> Liste complète des donateurs</div>
       <div class="controls">
@@ -516,6 +519,14 @@ function buildDashboard(data) {
       </div>
       <div id="tableCount" style="margin-top:12px;font-size:12px;color:var(--text-muted)"></div>
     </div>
+    ` : `
+    <!-- MODE BUREAU : message -->
+    <div class="card" style="text-align:center;padding:40px;">
+      <div style="font-size:36px;margin-bottom:12px;">👁</div>
+      <div style="font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Mode consultation</div>
+      <div style="font-size:13px;color:var(--text-muted);">Le détail des donateurs est réservé au compte administrateur.</div>
+    </div>
+    `}
   `;
 
   setTimeout(()=>{
@@ -525,8 +536,10 @@ function buildDashboard(data) {
     if(fillObj){const arc=Math.PI*90;fillObj.style.strokeDashoffset=arc*(1-Math.min(tauxObj/100,1));}
   },100);
 
-  renderTable(data,'all','');
-  setupFilters(data);
+  if (isAdmin()) {
+    renderTable(data,'all','');
+    setupFilters(data);
+  }
 }
 
 function buildDonut(data,total){

@@ -43,7 +43,8 @@
 
   .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
-  @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr; } }
   @media (max-width: 600px) { .grid-4 { grid-template-columns: 1fr; } .container { padding: 16px; } }
 
   .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; transition: all 0.3s ease; }
@@ -356,6 +357,14 @@ function buildDashboard(data) {
   const gc2 = taux<30?'#f87171':taux<60?'#fb923c':'#4ade80';
   const gtc = taux<30?'var(--accent-red)':taux<60?'var(--accent-orange)':'var(--accent-green)';
 
+  // 🕌 Jauge objectif global mosquée
+  const OBJECTIF_MOSQUEE = 525000;
+  const tauxObj = OBJECTIF_MOSQUEE>0 ? (totalRecu/OBJECTIF_MOSQUEE*100) : 0;
+  const resteObj = OBJECTIF_MOSQUEE - totalRecu;
+  const oc = tauxObj<25?'#8b5cf6':tauxObj<50?'#0ea5e9':'#22c55e';
+  const oc2 = tauxObj<25?'#a78bfa':tauxObj<50?'#38bdf8':'#4ade80';
+  const otc = tauxObj<25?'var(--accent-purple)':tauxObj<50?'var(--accent-blue)':'var(--accent-green)';
+
   const app = document.getElementById('app');
   app.innerHTML = `
     <div class="header">
@@ -375,10 +384,10 @@ function buildDashboard(data) {
       <div class="card kpi-card ${taux>=50?'green':'red'}"><div class="kpi-icon">📈</div><div class="card-title">Taux recouvrement</div><div class="kpi-value">${taux.toFixed(1)}%</div><div class="kpi-label">${taux>=50?'En bonne voie':'À accélérer'}</div></div>
     </div>
 
-    <!-- 🎯 JAUGE + 🔔 ALERTES -->
-    <div class="grid-2">
+    <!-- 🎯 JAUGE RECOUVREMENT + 🕌 JAUGE OBJECTIF + 🔔 ALERTES -->
+    <div class="grid-3">
       <div class="card">
-        <div class="section-title"><span>🎯</span> Objectif de collecte</div>
+        <div class="section-title"><span>🎯</span> Recouvrement promesses</div>
         <div class="gauge-container">
           <div class="gauge-wrapper">
             <svg class="gauge-svg" viewBox="0 0 220 130">
@@ -395,6 +404,25 @@ function buildDashboard(data) {
             <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-orange)">${nbPartiel}</div><div class="gauge-stat-label">Partiels</div></div>
             <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-red)">${nbNonPaye}</div><div class="gauge-stat-label">Non payés</div></div>
             <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-purple)">${nbSpontane}</div><div class="gauge-stat-label">Spontanés</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><span>🕌</span> Objectif mosquée — ${fmtE(OBJECTIF_MOSQUEE)}</div>
+        <div class="gauge-container">
+          <div class="gauge-wrapper">
+            <svg class="gauge-svg" viewBox="0 0 220 130">
+              <path d="M 20 120 A 90 90 0 0 1 200 120" class="gauge-bg"/>
+              <path d="M 20 120 A 90 90 0 0 1 200 120" class="gauge-fill" id="gaugeObj" stroke="url(#gO)" stroke-dasharray="${Math.PI*90}" stroke-dashoffset="${Math.PI*90}"/>
+              <defs><linearGradient id="gO" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:${oc}"/><stop offset="100%" style="stop-color:${oc2}"/></linearGradient></defs>
+            </svg>
+            <div class="gauge-center-value" style="color:${otc}">${tauxObj.toFixed(0)}%</div>
+          </div>
+          <div class="gauge-labels"><span>0%</span><span>50%</span><span>100%</span></div>
+          <div class="gauge-detail"><strong>${fmtE(totalRecu)}</strong> collectés sur <strong>${fmtE(OBJECTIF_MOSQUEE)}</strong></div>
+          <div class="gauge-breakdown">
+            <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-blue)">${fmtE(resteObj)}</div><div class="gauge-stat-label">Reste</div></div>
+            <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-cyan)">${fmtE(totalPromis)}</div><div class="gauge-stat-label">Promis</div></div>
           </div>
         </div>
       </div>
@@ -478,6 +506,8 @@ function buildDashboard(data) {
   setTimeout(()=>{
     const fill=document.getElementById('gaugeFill');
     if(fill){const arc=Math.PI*90;fill.style.strokeDashoffset=arc*(1-Math.min(taux/100,1));}
+    const fillObj=document.getElementById('gaugeObj');
+    if(fillObj){const arc=Math.PI*90;fillObj.style.strokeDashoffset=arc*(1-Math.min(tauxObj/100,1));}
   },100);
 
   renderTable(data,'all','');

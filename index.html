@@ -1,218 +1,573 @@
-# 📚 INDEX DES LIVRABLES — Priorité HAUTE v3.6.0
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Dons AMG</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-card: #111827;
+    --border: #1e293b;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-blue: #38bdf8;
+    --accent-green: #4ade80;
+    --accent-orange: #fb923c;
+    --accent-red: #f87171;
+    --accent-purple: #a78bfa;
+    --accent-cyan: #22d3ee;
+    --gradient-blue: linear-gradient(135deg, #0ea5e9, #38bdf8);
+    --gradient-green: linear-gradient(135deg, #22c55e, #4ade80);
+    --gradient-orange: linear-gradient(135deg, #f97316, #fb923c);
+    --gradient-red: linear-gradient(135deg, #ef4444, #f87171);
+    --font-main: 'DM Sans', sans-serif;
+    --font-mono: 'Space Mono', monospace;
+    --radius: 12px;
+    --radius-lg: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: var(--font-main); background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; overflow-x: hidden; }
+  .noise-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events: none; z-index: 0; }
+  .container { max-width: 1400px; margin: 0 auto; padding: 24px; position: relative; z-index: 1; }
 
-## 🎯 Objectif
-Intégrer les endpoints reçus fiscaux dans `doGet()` pour les rendre opérationnels.
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+  .header h1 { font-size: 28px; font-weight: 700; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; }
+  .header-meta { display: flex; align-items: center; gap: 12px; color: var(--text-muted); font-size: 13px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); animation: pulse-dot 2s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .refresh-btn { background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.2); color: var(--accent-blue); padding: 6px 14px; border-radius: var(--radius); font-family: var(--font-main); font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .refresh-btn:hover { background: rgba(56,189,248,0.2); }
 
-## ✅ Status
-**COMPLÉTÉ** — Prêt à déployer
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  @media (max-width: 1100px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-2 { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr; } }
+  @media (max-width: 600px) { .grid-4 { grid-template-columns: 1fr; } .container { padding: 16px; } }
 
----
+  .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; transition: all 0.3s ease; }
+  .card:hover { border-color: #2d3a50; }
+  .kpi-card { position: relative; overflow: hidden; }
+  .kpi-card .kpi-icon { position: absolute; top: 16px; right: 16px; font-size: 24px; opacity: 0.3; }
+  .card-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); margin-bottom: 8px; }
+  .kpi-value { font-size: 32px; font-weight: 700; font-family: var(--font-mono); letter-spacing: -1px; margin-bottom: 4px; }
+  .kpi-label { font-size: 13px; color: var(--text-secondary); }
+  .kpi-card.blue .kpi-value { color: var(--accent-blue); }
+  .kpi-card.green .kpi-value { color: var(--accent-green); }
+  .kpi-card.orange .kpi-value { color: var(--accent-orange); }
+  .kpi-card.red .kpi-value { color: var(--accent-red); }
+  .kpi-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+  .kpi-card.blue::after { background: var(--gradient-blue); }
+  .kpi-card.green::after { background: var(--gradient-green); }
+  .kpi-card.orange::after { background: var(--gradient-orange); }
+  .kpi-card.red::after { background: var(--gradient-red); }
 
-## 📦 LIVRABLES (7 fichiers)
+  .gauge-container { display: flex; flex-direction: column; align-items: center; padding: 24px 24px 16px; }
+  .gauge-wrapper { position: relative; width: 220px; height: 130px; margin-bottom: 16px; }
+  .gauge-svg { width: 220px; height: 130px; }
+  .gauge-bg { fill: none; stroke: #1e293b; stroke-width: 16; stroke-linecap: round; }
+  .gauge-fill { fill: none; stroke-width: 16; stroke-linecap: round; transition: stroke-dashoffset 1.5s ease-out; }
+  .gauge-center-value { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 36px; font-weight: 700; }
+  .gauge-labels { display: flex; justify-content: space-between; width: 220px; }
+  .gauge-labels span { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+  .gauge-detail { margin-top: 12px; text-align: center; font-size: 14px; color: var(--text-secondary); }
+  .gauge-detail strong { color: var(--text-primary); font-family: var(--font-mono); }
+  .gauge-breakdown { display: flex; gap: 12px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+  .gauge-stat { text-align: center; padding: 8px 14px; border-radius: var(--radius); background: rgba(255,255,255,0.03); border: 1px solid var(--border); }
+  .gauge-stat-value { font-family: var(--font-mono); font-weight: 700; font-size: 18px; }
+  .gauge-stat-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
 
-### 🔴 PRINCIPAL (À DÉPLOYER)
+  .chart-container { position: relative; height: 250px; padding-top: 8px; }
+  .chart-bars { display: flex; align-items: flex-end; gap: 6px; height: 210px; padding: 0 4px; }
+  .chart-bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .chart-bar { width: 100%; min-height: 4px; border-radius: 4px 4px 0 0; transition: height 0.8s ease-out, opacity 0.2s; position: relative; cursor: pointer; }
+  .chart-bar:hover { opacity: 0.8; }
+  .chart-bar-label { font-size: 9px; color: var(--text-muted); font-family: var(--font-mono); white-space: nowrap; text-align: center; }
+  .chart-bar-value { font-size: 9px; color: var(--text-secondary); font-family: var(--font-mono); text-align: center; white-space: nowrap; }
+  .chart-total { text-align: center; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+  .chart-total strong { color: var(--accent-blue); font-family: var(--font-mono); }
 
-#### **`code_3_6_0.js`** (122 KB)
-- **Fichier** : Script Google Apps Script v3.6.0
-- **Contenu** : 3032 lignes de code Apps Script
-- **Action** : À copier intégralement dans Google Apps Script
-- **Changements clés** :
-  - doGet() refactorisé avec indentation correcte
-  - Endpoints reçus intégrés et opérationnels
-  - Commentaires et documentation améliorés
-- **À faire ensuite** : Redéployer le script
+  .timeline { display: flex; flex-direction: column; gap: 0; }
+  .timeline-item { display: grid; grid-template-columns: 86px 1fr auto; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); align-items: center; transition: background 0.2s; }
+  .timeline-item:last-child { border-bottom: none; }
+  .timeline-item:hover { background: rgba(255,255,255,0.02); margin: 0 -8px; padding: 10px 8px; border-radius: 6px; }
+  .timeline-date { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+  .timeline-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .timeline-source { font-size: 10px; color: var(--text-muted); margin-top: 1px; display: flex; align-items: center; gap: 4px; }
+  .source-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .source-dot.ha { background: var(--accent-green); }
+  .source-dot.vir { background: var(--accent-blue); }
+  .source-dot.pp { background: var(--accent-orange); }
+  .source-dot.man { background: var(--accent-purple); }
+  .timeline-amount { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--accent-green); white-space: nowrap; }
 
----
+  .alerts-list { display: flex; flex-direction: column; gap: 6px; max-height: 400px; overflow-y: auto; }
+  .alert-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid; transition: all 0.2s; }
+  .alert-item.critical { border-color: rgba(248,113,113,0.25); background: rgba(248,113,113,0.06); }
+  .alert-item.warning { border-color: rgba(251,146,60,0.25); background: rgba(251,146,60,0.06); }
+  .alert-icon { font-size: 16px; flex-shrink: 0; }
+  .alert-info { flex: 1; min-width: 0; }
+  .alert-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .alert-detail { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+  .alert-amount { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--accent-red); white-space: nowrap; }
+  .alert-amount.warning-color { color: var(--accent-orange); }
 
-### 🟡 GUIDES DE DÉPLOIEMENT
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .badge.complet { background: rgba(74,222,128,0.12); color: var(--accent-green); }
+  .badge.partiel { background: rgba(251,146,60,0.12); color: var(--accent-orange); }
+  .badge.nonpaye { background: rgba(248,113,113,0.12); color: var(--accent-red); }
+  .badge.spontane { background: rgba(167,139,250,0.12); color: var(--accent-purple); }
 
-#### **`DEPLOYMENT_GUIDE_v3.6.0.md`** (8.4 KB)
-- **Objectif** : Expliciter les étapes de déploiement
-- **Contenu** :
-  - 4 étapes de déploiement (préparation, remplacement, redéploiement, vérification)
-  - 6 tests post-déploiement avec commandes curl
-  - Checklist de vérification complète
-  - Dépannage courant
-  - Intégration n8n
-- **Pour qui** : Toute personne déployant en production
-- **Temps estimé** : 15 minutes pour déployer + 10 minutes pour tester
+  .donut-container { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: center; }
+  .donut-svg { width: 160px; height: 160px; transform: rotate(-90deg); }
+  .donut-legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+  .legend-value { font-family: var(--font-mono); font-weight: 600; margin-left: auto; padding-left: 12px; }
 
----
+  .table-wrapper { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 10px 12px; font-weight: 600; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--bg-card); z-index: 2; }
+  td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text-secondary); }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td.amount { font-family: var(--font-mono); font-weight: 600; text-align: right; }
 
-### 🟢 GUIDES DE TEST
+  .controls { display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+  .search-box { flex: 1; min-width: 200px; padding: 10px 14px; border-radius: var(--radius); background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-primary); font-family: var(--font-main); font-size: 14px; outline: none; transition: border-color 0.2s; }
+  .search-box:focus { border-color: var(--accent-blue); }
+  .search-box::placeholder { color: var(--text-muted); }
+  .filter-btn { padding: 10px 16px; border-radius: var(--radius); background: var(--bg-primary); border: 1px solid var(--border); color: var(--text-secondary); font-family: var(--font-main); font-size: 13px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(56,189,248,0.05); }
 
-#### **`TEST_ENDPOINTS_v3.6.0.md`** (6.7 KB)
-- **Objectif** : Documenter tous les endpoints et comment les tester
-- **Contenu** :
-  - Présentation des 3 endpoints (dashboard, recus, recus_whatsapp)
-  - Réponses JSON documentées (exemples complets)
-  - 6 commandes curl pour tester chaque endpoint
-  - Checklist de validation
-  - Notes sur l'authentification et les restrictions
-- **Pour qui** : Toute personne testant ou intégrant l'API
-- **À faire** : Exécuter les commandes curl pour valider
+  .section-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; color: var(--text-secondary); }
+  .section-title span { font-size: 16px; }
+  .section-divider { height: 1px; background: var(--border); margin: 8px 0 24px; }
+  .count-badge { background: rgba(56,189,248,0.12); color: var(--accent-blue); padding: 2px 8px; border-radius: 10px; font-size: 11px; font-family: var(--font-mono); font-weight: 700; }
+  .empty-state { color: var(--text-muted); text-align: center; padding: 32px 16px; font-size: 13px; }
 
----
+  .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; gap: 16px; }
+  .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent-blue); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error-box { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); border-radius: var(--radius); padding: 20px; text-align: center; color: var(--accent-red); margin: 40px 0; }
 
-### 📝 DOCUMENTATION TECHNIQUE
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #334155; }
+</style>
+</head>
+<body>
+<div class="noise-overlay"></div>
 
-#### **`CHANGELOG_v3.6.0.md`** (4.8 KB)
-- **Objectif** : Enregistrer les changements entre versions
-- **Contenu** :
-  - Détail v3.5.1 → v3.6.0 (changements majeurs, bugs fixes)
-  - Code avant/après du problème identifié
-  - Historique des versions précédentes (v3.5.0, v3.4.0, etc.)
-  - Configuration requise
-  - Tests recommandés
-- **Pour qui** : Équipe de maintenance / audit
-- **Référence** : À garder à jour au fil des versions
+<!-- 🔒 ÉCRAN DE LOGIN -->
+<div id="loginScreen" style="display:flex; justify-content:center; align-items:center; min-height:100vh; position:relative; z-index:10;">
+  <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-lg); padding:40px; width:100%; max-width:420px; text-align:center;">
+    <div style="font-size:48px; margin-bottom:16px;">🕌</div>
+    <h2 style="font-size:22px; font-weight:700; background:linear-gradient(135deg,var(--accent-blue),var(--accent-cyan)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px;">Dashboard Dons AMG</h2>
+    <p style="color:var(--text-muted); font-size:13px; margin-bottom:28px;">Connectez-vous pour accéder au tableau de bord</p>
+    <input type="text" id="loginInput" placeholder="Identifiant (admin uniquement)"
+      autocomplete="username"
+      style="width:100%; padding:12px 16px; background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-primary); font-family:var(--font-main); font-size:14px; outline:none; margin-bottom:12px; transition:border-color 0.2s;"
+      onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border)'" />
+    <input type="password" id="passwordInput" placeholder="Mot de passe"
+      autocomplete="current-password"
+      style="width:100%; padding:12px 16px; background:var(--bg-primary); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-primary); font-family:var(--font-mono); font-size:14px; outline:none; margin-bottom:16px; transition:border-color 0.2s;"
+      onfocus="this.style.borderColor='var(--accent-blue)'" onblur="this.style.borderColor='var(--border)'" />
+    <button id="loginBtn" onclick="attemptLogin()"
+      style="width:100%; padding:12px; background:var(--gradient-blue); border:none; border-radius:var(--radius); color:#fff; font-family:var(--font-main); font-size:14px; font-weight:600; cursor:pointer; transition:opacity 0.2s;"
+      onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+      Se connecter
+    </button>
+    <p style="color:var(--text-muted); font-size:11px; margin-top:16px;">Bureau : laissez l'identifiant vide</p>
+    <div id="loginError" style="color:var(--accent-red); font-size:13px; margin-top:14px; display:none;"></div>
+    <div id="loginLoading" style="color:var(--text-muted); font-size:13px; margin-top:14px; display:none;">
+      <div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto 8px;"></div>
+      Connexion...
+    </div>
+  </div>
+</div>
 
-#### **`PRIORITE_HAUTE_COMPLETE.md`** (6.8 KB)
-- **Objectif** : Récapitulatif technique complet de ce qui a été fait
-- **Contenu** :
-  - Résumé exécutif
-  - Diagnostic du problème
-  - Solution implémentée
-  - Endpoints opérationnels
-  - Documentation fournie
-  - Sécurité validée
-  - Prochaines étapes
-- **Pour qui** : Chefs de projet / responsables techniques
-- **Lire en priorité** : Oui (vue d'ensemble)
+<!-- 📊 DASHBOARD (caché par défaut) -->
+<div class="container" id="app" style="display:none;">
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <div style="color: var(--text-muted); font-size: 14px;">Chargement des données AMG...</div>
+  </div>
+</div>
 
----
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxwjvKD1dpxuOzhnzWIMzgwz3LV5k58-Qy5jgJui6umdJdE12Bm-BhW_6O4fIibceK_/exec';
+let AUTH_PARAMS = ''; // 🔒 Paramètres d'auth stockés en mémoire
+let USER_ROLE = '';   // admin ou bureau
 
-### 📋 SYNTHÈSES
+// 🔒 LOGIN
+async function attemptLogin() {
+  const loginInput = document.getElementById('loginInput');
+  const passInput = document.getElementById('passwordInput');
+  const errDiv = document.getElementById('loginError');
+  const loadDiv = document.getElementById('loginLoading');
+  const btn = document.getElementById('loginBtn');
+  const login = loginInput.value.trim();
+  const password = passInput.value.trim();
 
-#### **`SYNTHESE_POUR_EQUIPE.md`** (4.6 KB)
-- **Objectif** : Résumé court et accessible pour la lecture rapide
-- **Contenu** :
-  - Mission accomplie
-  - 3 endpoints opérationnels (exemples)
-  - Checklist de déploiement
-  - FAQ
-  - Prochaines étapes
-- **Pour qui** : Équipe AMG, décideurs
-- **Temps de lecture** : 5 minutes
+  errDiv.style.display = 'none';
+  if (!password) { errDiv.textContent = 'Veuillez saisir le mot de passe.'; errDiv.style.display = 'block'; return; }
 
-#### **`RESUME_VISUEL.txt`** (11 KB)
-- **Objectif** : Vue d'ensemble visuelle et structurée
-- **Contenu** :
-  - Problème découvert (avec diagramme)
-  - Solution implémentée
-  - Endpoints opérationnels
-  - Exemples de réponses
-  - Checklist de test
-  - Prochaines étapes
-- **Pour qui** : Tous les niveaux
-- **Format** : ASCII art, facile à lire
+  btn.disabled = true; btn.style.opacity = '0.5';
+  loadDiv.style.display = 'block';
 
----
+  try {
+    // Construire les paramètres d'auth
+    let authStr = `password=${encodeURIComponent(password)}`;
+    if (login) authStr += `&login=${encodeURIComponent(login)}`;
 
-## 🗂️ COMMENT UTILISER CES FICHIERS
+    const resp = await fetch(`${API_URL}?action=dashboard&${authStr}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+    if (json.status === 'error') throw new Error(json.message || 'Identifiants invalides');
+    if (json.status !== 'success' || !json.data) throw new Error('Identifiants invalides');
 
-### Scénario 1️⃣ : Je dois déployer immédiatement
-1. Lire : `SYNTHESE_POUR_EQUIPE.md` (5 min)
-2. Copier : `code_3_6_0.js` dans Google Apps Script
-3. Suivre : `DEPLOYMENT_GUIDE_v3.6.0.md` (15 min)
-4. Tester : `TEST_ENDPOINTS_v3.6.0.md` (10 min)
-
-### Scénario 2️⃣ : Je dois comprendre les changements
-1. Lire : `PRIORITE_HAUTE_COMPLETE.md` (complet)
-2. Voir : `CHANGELOG_v3.6.0.md` (détails)
-3. Consulter : `RESUME_VISUEL.txt` (diagrammes)
-
-### Scénario 3️⃣ : Je dois tester les endpoints
-1. Lire : `TEST_ENDPOINTS_v3.6.0.md`
-2. Exécuter : les commandes curl fournies
-3. Vérifier : que les réponses correspondent aux exemples
-
-### Scénario 4️⃣ : Je dois intégrer n8n (WhatsApp)
-1. Lire : `DEPLOYMENT_GUIDE_v3.6.0.md` (section intégration n8n)
-2. Utiliser : l'endpoint `/recus_whatsapp`
-3. Consulter : `TEST_ENDPOINTS_v3.6.0.md` (format des réponses)
-
----
-
-## 📊 RÉFÉRENCE RAPIDE
-
-| Fichier | Taille | Temps lecture | Pour qui | Priorité |
-|---------|--------|---------------|----------|----------|
-| `code_3_6_0.js` | 122K | Copier/coller | Dev | 🔴 CRITIQUE |
-| `DEPLOYMENT_GUIDE_v3.6.0.md` | 8.4K | 10 min | Dev/DevOps | 🔴 HAUTE |
-| `TEST_ENDPOINTS_v3.6.0.md` | 6.7K | 10 min | Dev/QA | 🟡 MOYENNE |
-| `SYNTHESE_POUR_EQUIPE.md` | 4.6K | 5 min | Tous | 🟡 MOYENNE |
-| `PRIORITE_HAUTE_COMPLETE.md` | 6.8K | 15 min | Tech lead | 🟡 MOYENNE |
-| `CHANGELOG_v3.6.0.md` | 4.8K | 5 min | Maintenance | 🟢 BASSE |
-| `RESUME_VISUEL.txt` | 11K | 10 min | Tous | 🟢 BASSE |
-
----
-
-## ✨ POINTS CLÉS À RETENIR
-
-### ✅ Qu'est-ce qui a été corrigé?
-Les endpoints `?action=recus` et `?action=recus_whatsapp` qui n'étaient pas accessibles en v3.5.1 sont maintenant opérationnels.
-
-### ✅ Quels sont les risques?
-Aucun. Il s'agit uniquement d'une correction d'indentation (pas de changement de logique métier).
-
-### ✅ Quand déployer?
-Immédiatement. Le code est testé, documenté et prêt.
-
-### ✅ Comment tester?
-6 tests curl définis dans `TEST_ENDPOINTS_v3.6.0.md`.
-
-### ✅ Et après?
-Deux priorités MOYENNE/BASSE :
-1. Ajouter les stats reçus au dashboard HTML
-2. Créer le workflow n8n pour envoi WhatsApp
-
----
-
-## 🎓 NOTES TECHNIQUES
-
-### Configuration requise (aucun changement)
-```javascript
-CONFIG.SECRET_TOKEN = "35VnJmTSOt4mKoCQ3STWncrQkNA_7Zxuh5FBLcZd8ssXmLTh9"
-CONFIG.DASHBOARD_USERS = {
-  admin: { login: "admg", password: "Amboard7+" },
-  bureau: { password: "Amg74160" }
+    // ✅ Connexion réussie
+    AUTH_PARAMS = authStr;
+    USER_ROLE = json.role || 'bureau';
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    buildDashboard(json.data);
+  } catch (e) {
+    errDiv.textContent = '❌ ' + (e.message.includes('invalide') ? 'Identifiants incorrects' : e.message);
+    errDiv.style.display = 'block';
+    passInput.value = '';
+    passInput.focus();
+  } finally {
+    btn.disabled = false; btn.style.opacity = '1';
+    loadDiv.style.display = 'none';
+  }
 }
-```
 
-### Service Google requis
-- ✅ Google Sheets API (déjà activé)
-- ✅ Drive API v2 (à vérifier/activer si nécessaire)
+// Entrée pour valider depuis les deux champs
+document.getElementById('loginInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('passwordInput').focus(); });
+document.getElementById('passwordInput').addEventListener('keydown', e => { if (e.key === 'Enter') attemptLogin(); });
+document.getElementById('passwordInput').focus();
 
-### Endpoints disponibles
-- `?action=dashboard` → synthèse donateurs
-- `?action=recus` → stats reçus
-- `?action=recus_whatsapp` → reçus WhatsApp (admin only)
+const fmt = (n) => n.toLocaleString('fr-FR', {minimumFractionDigits:0, maximumFractionDigits:0});
+const fmtE = (n) => fmt(n) + ' €';
+const isAdmin = () => USER_ROLE === 'admin';
+const anonymize = (name) => isAdmin() ? name : '••••••';
+const MOIS_FR = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const MOIS_LONG = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
----
+function parseDateAny(str) {
+  if (!str) return null;
+  str = str.trim();
+  const fr = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (fr) return new Date(parseInt(fr[3]), parseInt(fr[2])-1, parseInt(fr[1]));
+  const d = new Date(str);
+  return isNaN(d.getTime()) ? null : d;
+}
 
-## 📞 SUPPORT
+function fmtDate(d) {
+  if (!d) return '';
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
 
-Si vous avez une question :
+function sourceIcon(src) {
+  if (!src) return '';
+  const s = src.toLowerCase();
+  if (s.includes('helloasso')) return '<span class="source-dot ha"></span>HelloAsso';
+  if (s.includes('virement')) return '<span class="source-dot vir"></span>Virement';
+  if (s.includes('paypal')) return '<span class="source-dot pp"></span>PayPal';
+  if (s.includes('manuel')) return '<span class="source-dot man"></span>Manuel';
+  return src;
+}
 
-1. **Avant de déployer?** → Lire `DEPLOYMENT_GUIDE_v3.6.0.md`
-2. **Après déploiement, ça ne marche pas?** → Lire `DEPLOYMENT_GUIDE_v3.6.0.md` (section Dépannage)
-3. **Comment tester?** → Suivre `TEST_ENDPOINTS_v3.6.0.md`
-4. **Qu'est-ce qui a changé?** → Lire `CHANGELOG_v3.6.0.md`
+async function loadData() {
+  try {
+    const resp = await fetch(`${API_URL}?action=dashboard&${AUTH_PARAMS}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    const json = await resp.json();
+    if (json.status !== 'success' || !json.data) throw new Error(json.message || 'Erreur API');
+    return json.data;
+  } catch (e) {
+    document.getElementById('loading').innerHTML = `<div class="error-box">❌ ${e.message}<br><small style="color:var(--text-muted)">Vérifiez la connexion et le déploiement du script.</small></div>`;
+    throw e;
+  }
+}
 
----
+function buildDashboard(data) {
+  let totalPromis=0, totalRecu=0, nbComplet=0, nbPartiel=0, nbNonPaye=0, nbSpontane=0;
+  const sourceTotals={}, monthlyData={}, allPayments=[], alertsCritical=[], alertsWarning=[];
 
-## ✅ CHECKLIST FINALE
+  data.forEach(d => {
+    totalPromis += d.montantPromis;
+    totalRecu += d.montantRecu;
+    if (d.statut==='Complet') nbComplet++;
+    else if (d.statut==='Partiel') nbPartiel++;
+    else if (d.statut==='Non payé') nbNonPaye++;
+    else if (d.statut==='Spontané') nbSpontane++;
 
-- [x] Code v3.6.0 créé et testé
-- [x] 7 fichiers de documentation créés
-- [x] Guides de déploiement écrits
-- [x] Tests définis et documentés
-- [x] Prêt pour production
+    // 🆕 v3.3.2 — Ventilation par source (plus de double-comptage)
+    // Fallback: si les champs de ventilation ne sont pas présents (ancienne API), utiliser l'ancien split
+    const hasVentilation = (d.mtManuel !== undefined || d.mtHelloAsso !== undefined || d.mtVirement !== undefined || d.mtPayPal !== undefined);
+    if (hasVentilation) {
+      if (d.mtManuel > 0) sourceTotals["Manuel"] = (sourceTotals["Manuel"]||0) + d.mtManuel;
+      if (d.mtHelloAsso > 0) sourceTotals["HelloAsso"] = (sourceTotals["HelloAsso"]||0) + d.mtHelloAsso;
+      if (d.mtVirement > 0) sourceTotals["Virement"] = (sourceTotals["Virement"]||0) + d.mtVirement;
+      if (d.mtPayPal > 0) sourceTotals["PayPal"] = (sourceTotals["PayPal"]||0) + d.mtPayPal;
+    } else {
+      // Ancien mode (avant v3.3.2) — double-comptage possible mais au moins ça affiche
+      (d.sources||'').split('+').forEach(s => {
+        s=s.trim();
+        if (s && s!=='Aucun') sourceTotals[s] = (sourceTotals[s]||0) + d.montantRecu;
+      });
+    }
 
----
+    if (d.datesPaiement && d.datesPaiement.trim()) {
+      const parts = d.datesPaiement.split(',').map(s=>s.trim()).filter(Boolean);
+      const nb = parts.length;
+      const amt = nb>0 ? d.montantRecu/nb : 0;
+      parts.forEach(dp => {
+        const date = parseDateAny(dp);
+        if (date) {
+          const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}`;
+          monthlyData[key] = (monthlyData[key]||0) + amt;
+          allPayments.push({ date, dateStr: fmtDate(date), nom: d.nom, prenom: d.prenom, montant: amt, source: d.sources });
+        }
+      });
+    }
 
-**Livrés par**: Claude  
-**Date**: 28 février 2025  
-**Version**: v3.6.0  
-**Status**: ✅ COMPLÉTÉ ET PRÊT À DÉPLOYER
+    if (d.statut==='Non payé' && d.montantPromis>=3000)
+      alertsCritical.push({nom:d.nom, prenom:d.prenom, montant:d.montantPromis, detail:`Promis ${fmtE(d.montantPromis)} — non payé`});
+    else if (d.statut==='Partiel' && d.reste>1000)
+      alertsWarning.push({nom:d.nom, prenom:d.prenom, montant:d.reste, detail:`Reste ${fmtE(d.reste)} sur ${fmtE(d.montantPromis)}`});
+    else if (d.statut==='Non payé' && d.montantPromis>=1000)
+      alertsWarning.push({nom:d.nom, prenom:d.prenom, montant:d.montantPromis, detail:`Promis ${fmtE(d.montantPromis)} — non payé`});
+  });
+
+  allPayments.sort((a,b)=>b.date-a.date);
+  const top15 = allPayments.slice(0,15);
+
+  alertsCritical.sort((a,b)=>b.montant-a.montant);
+  alertsWarning.sort((a,b)=>b.montant-a.montant);
+  const allAlerts = [...alertsCritical.slice(0,8).map(a=>({...a,type:'critical'})), ...alertsWarning.slice(0,7).map(a=>({...a,type:'warning'}))];
+
+  const sortedMonths = Object.keys(monthlyData).sort();
+  const last12 = sortedMonths.slice(-12);
+  const maxMonth = Math.max(...last12.map(k=>monthlyData[k]||0),1);
+  const totalMonthly = last12.reduce((s,k)=>s+(monthlyData[k]||0),0);
+
+  const reste = totalPromis - totalRecu;
+  const taux = totalPromis>0 ? (totalRecu/totalPromis*100) : 0;
+  const totalDonateurs = data.length;
+
+  const donutData = [
+    {label:'Complet',value:nbComplet,color:'#4ade80'},
+    {label:'Partiel',value:nbPartiel,color:'#fb923c'},
+    {label:'Non payé',value:nbNonPaye,color:'#f87171'},
+    {label:'Spontané',value:nbSpontane,color:'#a78bfa'}
+  ];
+  const donutTotal = donutData.reduce((s,d)=>s+d.value,0);
+
+  const gc = taux<30?'#ef4444':taux<60?'#f97316':'#22c55e';
+  const gc2 = taux<30?'#f87171':taux<60?'#fb923c':'#4ade80';
+  const gtc = taux<30?'var(--accent-red)':taux<60?'var(--accent-orange)':'var(--accent-green)';
+
+  // 🕌 Jauge objectif global mosquée
+  const OBJECTIF_MOSQUEE = 525000;
+  const tauxObj = OBJECTIF_MOSQUEE>0 ? (totalRecu/OBJECTIF_MOSQUEE*100) : 0;
+  const resteObj = OBJECTIF_MOSQUEE - totalRecu;
+  const oc = tauxObj<25?'#8b5cf6':tauxObj<50?'#0ea5e9':'#22c55e';
+  const oc2 = tauxObj<25?'#a78bfa':tauxObj<50?'#38bdf8':'#4ade80';
+  const otc = tauxObj<25?'var(--accent-purple)':tauxObj<50?'var(--accent-blue)':'var(--accent-green)';
+
+  const app = document.getElementById('app');
+  app.innerHTML = `
+    <div class="header">
+      <h1>📊 Dashboard Dons AMG</h1>
+      <div class="header-meta">
+        <div class="status-dot"></div>
+        <span>MAJ : ${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
+        <span class="count-badge">${totalDonateurs} donateurs</span>
+        <span class="count-badge" style="${USER_ROLE==='admin'?'background:rgba(74,222,128,0.12);color:var(--accent-green)':'background:rgba(167,139,250,0.12);color:var(--accent-purple)'}">${USER_ROLE==='admin'?'🔑 Admin':'👁 Bureau'}</span>
+        <button class="refresh-btn" onclick="loadData().then(d=>buildDashboard(d))">↻ Actualiser</button>
+      </div>
+    </div>
+
+    <div class="grid-4">
+      <div class="card kpi-card blue"><div class="kpi-icon">💰</div><div class="card-title">Total promis</div><div class="kpi-value">${fmtE(totalPromis)}</div><div class="kpi-label">${totalDonateurs-nbSpontane} promesse(s)</div></div>
+      <div class="card kpi-card green"><div class="kpi-icon">✅</div><div class="card-title">Total reçu</div><div class="kpi-value">${fmtE(totalRecu)}</div><div class="kpi-label">${nbComplet+nbPartiel+nbSpontane} donateur(s) actif(s)</div></div>
+      <div class="card kpi-card orange"><div class="kpi-icon">⏳</div><div class="card-title">Reste à collecter</div><div class="kpi-value">${fmtE(reste)}</div><div class="kpi-label">${nbNonPaye+nbPartiel} en attente</div></div>
+      <div class="card kpi-card ${taux>=50?'green':'red'}"><div class="kpi-icon">📈</div><div class="card-title">Taux recouvrement</div><div class="kpi-value">${taux.toFixed(1)}%</div><div class="kpi-label">${taux>=50?'En bonne voie':'À accélérer'}</div></div>
+    </div>
+
+    <!-- 🎯 JAUGE RECOUVREMENT + 🕌 JAUGE OBJECTIF + 🔔 ALERTES -->
+    <div class="grid-3">
+      <div class="card">
+        <div class="section-title"><span>🎯</span> Recouvrement promesses</div>
+        <div class="gauge-container">
+          <div class="gauge-wrapper">
+            <svg class="gauge-svg" viewBox="0 0 220 130">
+              <path d="M 20 120 A 90 90 0 0 1 200 120" class="gauge-bg"/>
+              <path d="M 20 120 A 90 90 0 0 1 200 120" class="gauge-fill" id="gaugeFill" stroke="url(#gG)" stroke-dasharray="${Math.PI*90}" stroke-dashoffset="${Math.PI*90}"/>
+              <defs><linearGradient id="gG" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:${gc}"/><stop offset="100%" style="stop-color:${gc2}"/></linearGradient></defs>
+            </svg>
+            <div class="gauge-center-value" style="color:${gtc}">${taux.toFixed(0)}%</div>
+          </div>
+          <div class="gauge-labels"><span>0%</span><span>50%</span><span>100%</span></div>
+          <div class="gauge-detail"><strong>${fmtE(totalRecu)}</strong> reçus sur <strong>${fmtE(totalPromis)}</strong> promis</div>
+          <div class="gauge-breakdown">
+            <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-green)">${nbComplet}</div><div class="gauge-stat-label">Complets</div></div>
+            <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-orange)">${nbPartiel}</div><div class="gauge-stat-label">Partiels</div></div>
+            <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-red)">${nbNonPaye}</div><div class="gauge-stat-label">Non payés</div></div>
+            <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-purple)">${nbSpontane}</div><div class="gauge-stat-label">Spontanés</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><span>🕌</span> Objectif mosquée — ${fmtE(OBJECTIF_MOSQUEE)}</div>
+        <div class="gauge-container">
+          <div class="gauge-wrapper">
+            <svg class="gauge-svg" viewBox="0 0 220 130">
+              <path d="M 20 120 A 90 90 0 0 1 200 120" class="gauge-bg"/>
+              <path d="M 20 120 A 90 90 0 0 1 200 120" class="gauge-fill" id="gaugeObj" stroke="url(#gO)" stroke-dasharray="${Math.PI*90}" stroke-dashoffset="${Math.PI*90}"/>
+              <defs><linearGradient id="gO" x1="0%" y1="0%" x2="100%" y2="0%"><stop offset="0%" style="stop-color:${oc}"/><stop offset="100%" style="stop-color:${oc2}"/></linearGradient></defs>
+            </svg>
+            <div class="gauge-center-value" style="color:${otc}">${tauxObj.toFixed(0)}%</div>
+          </div>
+          <div class="gauge-labels"><span>0%</span><span>50%</span><span>100%</span></div>
+          <div class="gauge-detail"><strong>${fmtE(totalRecu)}</strong> collectés sur <strong>${fmtE(OBJECTIF_MOSQUEE)}</strong></div>
+          <div class="gauge-breakdown">
+            <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-blue)">${fmtE(resteObj)}</div><div class="gauge-stat-label">Reste</div></div>
+            <div class="gauge-stat"><div class="gauge-stat-value" style="color:var(--accent-cyan)">${fmtE(totalPromis)}</div><div class="gauge-stat-label">Promis</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><span>🔔</span> Alertes prioritaires <span class="count-badge">${allAlerts.length}</span></div>
+        <div class="alerts-list">
+          ${allAlerts.length===0?'<div class="empty-state">✅ Aucune alerte</div>':
+            allAlerts.map(a=>`<div class="alert-item ${a.type}"><div class="alert-icon">${a.type==='critical'?'🔴':'🟠'}</div><div class="alert-info"><div class="alert-name">${anonymize(a.prenom)} ${anonymize(a.nom)}</div><div class="alert-detail">${a.detail}</div></div><div class="alert-amount ${a.type==='warning'?'warning-color':''}">${fmtE(a.montant)}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <!-- 📈 CHART + ⏰ TIMELINE -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-title"><span>📈</span> Évolution mensuelle des encaissements</div>
+        ${last12.length===0?'<div class="empty-state">Pas de données disponibles</div>':`
+        <div class="chart-container"><div class="chart-bars">
+          ${last12.map(key=>{
+            const val=monthlyData[key]||0;
+            const h=Math.max(4,(val/maxMonth)*190);
+            const [y,m]=key.split('-');
+            const mi=parseInt(m)-1;
+            const best=val===maxMonth?'background:linear-gradient(180deg,#22d3ee,#0ea5e9)':'background:var(--gradient-blue)';
+            return `<div class="chart-bar-group"><div class="chart-bar-value">${val>0?fmt(Math.round(val))+'€':''}</div><div class="chart-bar" style="height:${h}px;${best}" title="${MOIS_LONG[mi]} ${y}: ${fmtE(Math.round(val))}"></div><div class="chart-bar-label">${MOIS_FR[mi]}<br><span style="font-size:8px;opacity:0.5">${y.slice(2)}</span></div></div>`;
+          }).join('')}
+        </div></div>
+        <div class="chart-total">Total sur la période : <strong>${fmtE(Math.round(totalMonthly))}</strong></div>`}
+      </div>
+      <div class="card">
+        <div class="section-title"><span>⏰</span> Derniers paiements reçus <span class="count-badge">${top15.length}</span></div>
+        <div class="timeline" style="max-height:360px;overflow-y:auto;">
+          ${top15.length===0?'<div class="empty-state">Aucun paiement avec date</div>':
+            top15.map(p=>`<div class="timeline-item"><div class="timeline-date">${p.dateStr}</div><div><div class="timeline-name">${anonymize(p.prenom)} ${anonymize(p.nom)}</div><div class="timeline-source">${sourceIcon(p.source)}</div></div><div class="timeline-amount">+${fmtE(Math.round(p.montant))}</div></div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    ${isAdmin() ? `
+    <!-- DONUT + SOURCES (admin only) -->
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-title"><span>📋</span> Répartition par statut</div>
+        <div class="donut-container">
+          <svg class="donut-svg" viewBox="0 0 160 160">${buildDonut(donutData,donutTotal)}</svg>
+          <div class="donut-legend">${donutData.map(d=>`<div class="legend-item"><div class="legend-dot" style="background:${d.color}"></div><span>${d.label}</span><span class="legend-value" style="color:${d.color}">${d.value}</span></div>`).join('')}</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title"><span>💳</span> Répartition par source</div>
+        <div style="display:flex;flex-direction:column;gap:14px;padding-top:8px;">
+          ${Object.entries(sourceTotals).sort((a,b)=>b[1]-a[1]).map(([src,val])=>{
+            const pct=totalRecu>0?(val/totalRecu*100):0;
+            return `<div><div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="font-size:13px;font-weight:500">${sourceIcon(src)}</span><span style="font-size:13px;font-family:var(--font-mono);color:var(--accent-blue)">${fmtE(Math.round(val))} <span style="color:var(--text-muted);font-size:11px">(${pct.toFixed(0)}%)</span></span></div><div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--gradient-blue);border-radius:3px;transition:width 1s ease-out"></div></div></div>`;
+          }).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="section-divider"></div>
+
+    <!-- TABLE (admin only) -->
+    <div class="card">
+      <div class="section-title"><span>📝</span> Liste complète des donateurs</div>
+      <div class="controls">
+        <input type="text" class="search-box" id="searchBox" placeholder="🔍 Rechercher un donateur...">
+        <button class="filter-btn active" data-filter="all">Tous</button>
+        <button class="filter-btn" data-filter="Complet">✅ Complet</button>
+        <button class="filter-btn" data-filter="Partiel">⚠️ Partiel</button>
+        <button class="filter-btn" data-filter="Non payé">❌ Non payé</button>
+        <button class="filter-btn" data-filter="Spontané">🆕 Spontané</button>
+      </div>
+      <div class="table-wrapper" style="max-height:600px;overflow-y:auto">
+        <table><thead><tr><th>Nom</th><th>Prénom</th><th style="text-align:right">Promis</th><th style="text-align:right">Reçu</th><th style="text-align:right">Reste</th><th>Statut</th><th>Source(s)</th></tr></thead><tbody id="tableBody"></tbody></table>
+      </div>
+      <div id="tableCount" style="margin-top:12px;font-size:12px;color:var(--text-muted)"></div>
+    </div>
+    ` : `
+    <!-- MODE BUREAU : message -->
+    <div class="card" style="text-align:center;padding:40px;">
+      <div style="font-size:36px;margin-bottom:12px;">👁</div>
+      <div style="font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Mode consultation</div>
+      <div style="font-size:13px;color:var(--text-muted);">Le détail des donateurs est réservé au compte administrateur.</div>
+    </div>
+    `}
+  `;
+
+  setTimeout(()=>{
+    const fill=document.getElementById('gaugeFill');
+    if(fill){const arc=Math.PI*90;fill.style.strokeDashoffset=arc*(1-Math.min(taux/100,1));}
+    const fillObj=document.getElementById('gaugeObj');
+    if(fillObj){const arc=Math.PI*90;fillObj.style.strokeDashoffset=arc*(1-Math.min(tauxObj/100,1));}
+  },100);
+
+  if (isAdmin()) {
+    renderTable(data,'all','');
+    setupFilters(data);
+  }
+}
+
+function buildDonut(data,total){
+  if(total===0) return '<circle cx="80" cy="80" r="60" fill="none" stroke="#1e293b" stroke-width="20"/>';
+  let c=0;const circ=2*Math.PI*60;
+  return data.map(d=>{const p=d.value/total;const dash=p*circ;const off=-c*circ;c+=p;return `<circle cx="80" cy="80" r="60" fill="none" stroke="${d.color}" stroke-width="20" stroke-dasharray="${dash} ${circ-dash}" stroke-dashoffset="${off}" style="transition:all 1s ease-out"/>`;}).join('');
+}
+
+function renderTable(data,filter,search){
+  const tbody=document.getElementById('tableBody');if(!tbody)return;
+  let f=data;
+  if(filter!=='all')f=f.filter(d=>d.statut===filter);
+  if(search){const s=search.toLowerCase();f=f.filter(d=>(d.nom||'').toLowerCase().includes(s)||(d.prenom||'').toLowerCase().includes(s)||(d.email||'').toLowerCase().includes(s));}
+  f.sort((a,b)=>b.reste-a.reste);
+  tbody.innerHTML=f.map(d=>{
+    const cls=d.statut==='Complet'?'complet':d.statut==='Partiel'?'partiel':d.statut==='Spontané'?'spontane':'nonpaye';
+    return `<tr><td style="font-weight:500;color:var(--text-primary)">${d.nom}</td><td>${d.prenom}</td><td class="amount" style="color:var(--accent-blue)">${d.montantPromis>0?fmtE(d.montantPromis):'—'}</td><td class="amount" style="color:var(--accent-green)">${d.montantRecu>0?fmtE(d.montantRecu):'—'}</td><td class="amount" style="color:${d.reste>0?'var(--accent-red)':d.reste<0?'var(--accent-green)':'var(--text-muted)'}">${d.reste!==0?fmtE(d.reste):'—'}</td><td><span class="badge ${cls}">${d.statut}</span></td><td style="font-size:11px;color:var(--text-muted)">${d.sources||''}</td></tr>`;
+  }).join('');
+  document.getElementById('tableCount').textContent=`${f.length} donateur(s) affiché(s) sur ${data.length}`;
+}
+
+function setupFilters(data){
+  let af='all',st='';
+  document.querySelectorAll('.filter-btn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');af=btn.dataset.filter;renderTable(data,af,st);});});
+  const sb=document.getElementById('searchBox');if(sb)sb.addEventListener('input',e=>{st=e.target.value;renderTable(data,af,st);});
+}
+
+// Le chargement est géré par attemptLogin() → plus d'appel auto
+</script>
+</body>
+</html>

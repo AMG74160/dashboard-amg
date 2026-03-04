@@ -134,6 +134,7 @@
   .source-dot.vir { background: var(--accent-blue); }
   .source-dot.pp { background: var(--accent-orange); }
   .source-dot.man { background: var(--accent-purple); }
+  .source-dot.chq { background: var(--accent-gold); }
   .timeline-amount { font-size: 14px; font-weight: 700; font-family: var(--font-mono); color: var(--accent-green); white-space: nowrap; }
   .timeline-badge { font-size: 8px; padding: 1px 5px; border-radius: 4px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
   .timeline-badge.classique { background: rgba(56,189,248,0.12); color: var(--accent-blue); }
@@ -283,6 +284,7 @@ function sourceIcon(src) {
   if (!src) return '';
   const s = src.toLowerCase();
   if (s.includes('helloasso')) return '<span class="source-dot ha"></span>HelloAsso';
+  if (s.includes('chèque') || s.includes('cheque')) return '<span class="source-dot chq"></span>Chèque';
   if (s.includes('virement')) return '<span class="source-dot vir"></span>Virement';
   if (s.includes('paypal')) return '<span class="source-dot pp"></span>PayPal';
   if (s.includes('manuel') || s.includes('espèce')) return '<span class="source-dot man"></span>Manuel';
@@ -313,6 +315,7 @@ function buildDashboard(data, campagne10K) {
       if (d.mtHelloAsso > 0) sourceTotals["HelloAsso"] = (sourceTotals["HelloAsso"]||0) + d.mtHelloAsso;
       if (d.mtVirement > 0) sourceTotals["Virement"] = (sourceTotals["Virement"]||0) + d.mtVirement;
       if (d.mtPayPal > 0) sourceTotals["PayPal"] = (sourceTotals["PayPal"]||0) + d.mtPayPal;
+      if (d.mtCheque > 0) sourceTotals["Chèque"] = (sourceTotals["Chèque"]||0) + d.mtCheque;
     } else {
       (d.sources||'').split('+').forEach(s => { s=s.trim(); if (s && s!=='Aucun') sourceTotals[s] = (sourceTotals[s]||0) + d.montantRecu; });
     }

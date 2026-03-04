@@ -256,7 +256,7 @@ async function attemptLogin() {
     USER_ROLE = json.role || 'bureau';
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    buildDashboard(json.data, json.campagne10K || null);
+buildDashboard(json.data, json.campagne10K || null, json.totalCheques || 0);
   } catch (e) {
     errDiv.textContent = '❌ ' + (e.message.includes('invalide') ? 'Identifiants incorrects' : e.message);
     errDiv.style.display = 'block'; passInput.value = ''; passInput.focus();
@@ -296,10 +296,11 @@ async function loadData() {
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   const json = await resp.json();
   if (json.status !== 'success' || !json.data) throw new Error(json.message || 'Erreur API');
-  return { data: json.data, campagne10K: json.campagne10K || null };
+  return { data: json.data, campagne10K: json.campagne10K || null, totalCheques: json.totalCheques || 0 };
 }
 
-function buildDashboard(data, campagne10K) {
+function buildDashboard(data, campagne10K, totalChequesGlobal) {
+  totalChequesGlobal = totalChequesGlobal || 0;
   // ══════ CALCULS CLASSIQUES ══════
   let totalPromis=0, totalRecu=0, nbComplet=0, nbPartiel=0, nbNonPaye=0, nbSpontane=0;
   const sourceTotals={}, monthlyClassique={}, allPayments=[], alertsCritical=[], alertsWarning=[];
@@ -363,6 +364,8 @@ function buildDashboard(data, campagne10K) {
   }
 
   // ══════ CONSOLIDATION ══════
+  const totalCheques = campagne10K && campagne10K.kpis ? 0 : 0; // placeholder
+  // Récupérer le total chèques depuis l'API (transmis dans json.totalCheques)
   const totalRecuGlobal = totalRecu + kpis10K.totalRecu;
   const totalPromisGlobal = totalPromis + kpis10K.totalPrevu;
   const totalDonateurs = data.length;
@@ -409,7 +412,7 @@ function buildDashboard(data, campagne10K) {
         <div class="status-dot"></div>
         <span>MAJ : ${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
         <span class="count-badge" style="${USER_ROLE==='admin'?'background:rgba(74,222,128,0.12);color:var(--accent-green)':'background:rgba(167,139,250,0.12);color:var(--accent-purple)'}">${USER_ROLE==='admin'?'🔑 Admin':'👁 Bureau'}</span>
-        <button class="refresh-btn" onclick="loadData().then(r=>buildDashboard(r.data,r.campagne10K))">↻ Actualiser</button>
+        <button class="refresh-btn" onclick="loadData().then(r=>buildDashboard(r.data,r.campagne10K,r.totalCheques))">↻ Actualiser</button>
       </div>
     </div>
 
@@ -443,6 +446,13 @@ function buildDashboard(data, campagne10K) {
           <span><span class="dot" style="background:var(--accent-purple)"></span> 10K : ${fmtE(kpis10K.totalRecu)}</span>
         </div>
       </div>
+      ${totalChequesGlobal > 0 ? `
+      <div class="cb-divider"></div>
+      <div>
+        <div class="cb-title">🏦 Chèques encaissés</div>
+        <div class="cb-value" style="color:var(--accent-gold)">${fmtE(totalChequesGlobal)}</div>
+        <div class="cb-label">période gala</div>
+      </div>` : ''}
     </div>
 
     <!-- ═══ DUAL COLUMNS ═══ -->

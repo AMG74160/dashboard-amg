@@ -119,6 +119,20 @@
   .badge.partiel { background: rgba(251,146,60,0.12); color: var(--accent-orange); }
   .badge.nonpaye { background: rgba(248,113,113,0.12); color: var(--accent-red); }
   .badge.spontane { background: rgba(167,139,250,0.12); color: var(--accent-purple); }
+  .badge.donrecu { background: rgba(167,139,250,0.12); color: var(--accent-purple); }
+
+  /* 🎯 Campagne 10K */
+  .section-10k { margin-top: 8px; }
+  .section-10k-header { background: linear-gradient(135deg, #7c3aed, #a78bfa); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
+  .section-10k-header h2 { font-size: 20px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 10px; }
+  .section-10k-header .badge-10k { background: rgba(255,255,255,0.2); color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .kpi-card.purple .kpi-value { color: var(--accent-purple); }
+  .kpi-card.purple::after { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+  .grid-4-10k { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 1100px) { .grid-4-10k { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .grid-4-10k { grid-template-columns: 1fr; } }
+  .progress-10k { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin: 8px 0; }
+  .progress-10k-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, #7c3aed, #a78bfa); transition: width 1.5s ease-out; }
 
   .donut-container { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: center; }
   .donut-svg { width: 160px; height: 160px; transform: rotate(-90deg); }
@@ -234,7 +248,7 @@ async function attemptLogin() {
     USER_ROLE = json.role || 'bureau';
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
-    buildDashboard(json.data);
+    buildDashboard(json.data, json.campagne10K || null);
   } catch (e) {
     errDiv.textContent = '❌ ' + (e.message.includes('invalide') ? 'Identifiants incorrects' : e.message);
     errDiv.style.display = 'block';
@@ -288,14 +302,14 @@ async function loadData() {
     if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
     const json = await resp.json();
     if (json.status !== 'success' || !json.data) throw new Error(json.message || 'Erreur API');
-    return json.data;
+    return { data: json.data, campagne10K: json.campagne10K || null };
   } catch (e) {
     document.getElementById('loading').innerHTML = `<div class="error-box">❌ ${e.message}<br><small style="color:var(--text-muted)">Vérifiez la connexion et le déploiement du script.</small></div>`;
     throw e;
   }
 }
 
-function buildDashboard(data) {
+function buildDashboard(data, campagne10K) {
   let totalPromis=0, totalRecu=0, nbComplet=0, nbPartiel=0, nbNonPaye=0, nbSpontane=0;
   const sourceTotals={}, monthlyData={}, allPayments=[], alertsCritical=[], alertsWarning=[];
 
@@ -390,7 +404,7 @@ function buildDashboard(data) {
         <span>MAJ : ${new Date().toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
         <span class="count-badge">${totalDonateurs} donateurs</span>
         <span class="count-badge" style="${USER_ROLE==='admin'?'background:rgba(74,222,128,0.12);color:var(--accent-green)':'background:rgba(167,139,250,0.12);color:var(--accent-purple)'}">${USER_ROLE==='admin'?'🔑 Admin':'👁 Bureau'}</span>
-        <button class="refresh-btn" onclick="loadData().then(d=>buildDashboard(d))">↻ Actualiser</button>
+        <button class="refresh-btn" onclick="loadData().then(r=>buildDashboard(r.data,r.campagne10K))">↻ Actualiser</button>
       </div>
     </div>
 
@@ -519,6 +533,67 @@ function buildDashboard(data) {
       </div>
       <div id="tableCount" style="margin-top:12px;font-size:12px;color:var(--text-muted)"></div>
     </div>
+
+    ${campagne10K && campagne10K.data && campagne10K.data.length > 0 ? `
+    <!-- 🎯 CAMPAGNE 10K -->
+    <div class="section-divider"></div>
+    <div class="section-10k">
+      <div class="section-10k-header">
+        <h2>🎯 Campagne 10K</h2>
+        <span class="badge-10k">${campagne10K.count} donateur(s)</span>
+      </div>
+      <div class="card" style="border-radius: 0 0 var(--radius-lg) var(--radius-lg); border-top: none;">
+        <div class="grid-4-10k" style="margin-top:16px;">
+          <div class="card kpi-card purple" style="padding:16px">
+            <div class="card-title">Prévu</div>
+            <div class="kpi-value" style="font-size:24px">${fmtE(campagne10K.kpis.totalPrevu)}</div>
+          </div>
+          <div class="card kpi-card green" style="padding:16px">
+            <div class="card-title">Reçu</div>
+            <div class="kpi-value" style="font-size:24px">${fmtE(campagne10K.kpis.totalRecu)}</div>
+          </div>
+          <div class="card kpi-card orange" style="padding:16px">
+            <div class="card-title">Reste</div>
+            <div class="kpi-value" style="font-size:24px">${fmtE(campagne10K.kpis.reste)}</div>
+          </div>
+          <div class="card kpi-card ${parseFloat(campagne10K.kpis.taux)>=50?'green':'red'}" style="padding:16px">
+            <div class="card-title">Taux</div>
+            <div class="kpi-value" style="font-size:24px">${campagne10K.kpis.taux}%</div>
+          </div>
+        </div>
+        <div class="progress-10k">
+          <div class="progress-10k-fill" style="width:${Math.min(parseFloat(campagne10K.kpis.taux)||0,100)}%"></div>
+        </div>
+        <div style="display:flex;justify-content:center;gap:24px;margin:12px 0;font-size:13px;">
+          <span style="color:var(--accent-green)">✅ ${campagne10K.kpis.nbComplet} complet(s)</span>
+          <span style="color:var(--accent-orange)">⚠️ ${campagne10K.kpis.nbPartiel} partiel(s)</span>
+          <span style="color:var(--accent-red)">❌ ${campagne10K.kpis.nbNonPaye} non payé(s)</span>
+        </div>
+
+        <div style="margin-top:16px;">
+          <div class="controls">
+            <input type="text" class="search-box" id="search10K" placeholder="🔍 Rechercher un donateur 10K...">
+            <button class="filter-btn active" data-filter10k="all">Tous</button>
+            <button class="filter-btn" data-filter10k="Complet">✅</button>
+            <button class="filter-btn" data-filter10k="Partiel">⚠️</button>
+            <button class="filter-btn" data-filter10k="Non payé">❌</button>
+            <button class="filter-btn" data-filter10k="Don reçu">🎁</button>
+          </div>
+          <div class="table-wrapper" style="max-height:500px;overflow-y:auto">
+            <table>
+              <thead><tr>
+                <th>Nom</th><th>Prénom</th><th>Statut contact</th>
+                <th style="text-align:right">Prévu</th><th style="text-align:right">Reçu</th>
+                <th style="text-align:right">Reste</th><th>Paiement</th><th>Source(s)</th>
+              </tr></thead>
+              <tbody id="table10KBody"></tbody>
+            </table>
+          </div>
+          <div id="table10KCount" style="margin-top:12px;font-size:12px;color:var(--text-muted)"></div>
+        </div>
+      </div>
+    </div>
+    ` : ''}
     ` : `
     <!-- MODE BUREAU : message -->
     <div class="card" style="text-align:center;padding:40px;">
@@ -539,6 +614,11 @@ function buildDashboard(data) {
   if (isAdmin()) {
     renderTable(data,'all','');
     setupFilters(data);
+    // 🎯 Campagne 10K
+    if (campagne10K && campagne10K.data && campagne10K.data.length > 0) {
+      renderTable10K(campagne10K.data, 'all', '');
+      setupFilters10K(campagne10K.data);
+    }
   }
 }
 
@@ -563,8 +643,49 @@ function renderTable(data,filter,search){
 
 function setupFilters(data){
   let af='all',st='';
-  document.querySelectorAll('.filter-btn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');af=btn.dataset.filter;renderTable(data,af,st);});});
+  document.querySelectorAll('[data-filter]').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('[data-filter]').forEach(b=>b.classList.remove('active'));btn.classList.add('active');af=btn.dataset.filter;renderTable(data,af,st);});});
   const sb=document.getElementById('searchBox');if(sb)sb.addEventListener('input',e=>{st=e.target.value;renderTable(data,af,st);});
+}
+
+function renderTable10K(data10k, filter, search) {
+  const tbody = document.getElementById('table10KBody'); if (!tbody) return;
+  let f = data10k;
+  if (filter !== 'all') f = f.filter(d => d.statutPaiement === filter);
+  if (search) {
+    const s = search.toLowerCase();
+    f = f.filter(d => (d.nom||'').toLowerCase().includes(s) || (d.prenom||'').toLowerCase().includes(s));
+  }
+  f.sort((a,b) => b.reste - a.reste);
+  tbody.innerHTML = f.map(d => {
+    const cls = d.statutPaiement === 'Complet' ? 'complet' : d.statutPaiement === 'Partiel' ? 'partiel' : d.statutPaiement === 'Don reçu' ? 'donrecu' : 'nonpaye';
+    const statutBadge = d.statutContact ? `<span style="font-size:10px;color:var(--text-muted)">${d.statutContact}</span>` : '';
+    return `<tr>
+      <td style="font-weight:500;color:var(--text-primary)">${d.nom}</td>
+      <td>${d.prenom}</td>
+      <td>${statutBadge}</td>
+      <td class="amount" style="color:var(--accent-purple)">${d.contributionPrevue > 0 ? fmtE(d.contributionPrevue) : '—'}</td>
+      <td class="amount" style="color:var(--accent-green)">${d.montantRecu > 0 ? fmtE(d.montantRecu) : '—'}</td>
+      <td class="amount" style="color:${d.reste > 0 ? 'var(--accent-red)' : d.reste < 0 ? 'var(--accent-green)' : 'var(--text-muted)'}">${d.reste !== 0 ? fmtE(d.reste) : '—'}</td>
+      <td><span class="badge ${cls}">${d.statutPaiement}</span></td>
+      <td style="font-size:11px;color:var(--text-muted)">${d.sources || ''}</td>
+    </tr>`;
+  }).join('');
+  const countEl = document.getElementById('table10KCount');
+  if (countEl) countEl.textContent = `${f.length} donateur(s) affiché(s) sur ${data10k.length}`;
+}
+
+function setupFilters10K(data10k) {
+  let af = 'all', st = '';
+  document.querySelectorAll('[data-filter10k]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-filter10k]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      af = btn.dataset.filter10k;
+      renderTable10K(data10k, af, st);
+    });
+  });
+  const sb = document.getElementById('search10K');
+  if (sb) sb.addEventListener('input', e => { st = e.target.value; renderTable10K(data10k, af, st); });
 }
 
 // Le chargement est géré par attemptLogin() → plus d'appel auto

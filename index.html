@@ -724,15 +724,9 @@ async function apiGet(action) {
 }
 
 async function apiPost(body) {
-  body.token = state.token || undefined;
-  body.password = state.password || undefined;
-  body.login = state.login || undefined;
-  const r = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  return r.json();
+  // Apps Script ne gère pas le CORS preflight (OPTIONS) pour les POST externes.
+  // On passe par GET avec les paramètres en query string.
+  return apiGet(body.action || 'sync');
 }
 
 // ==================== ANIMATION HELPERS ====================

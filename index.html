@@ -891,7 +891,6 @@ function renderOverview(container) {
       <div class="bar-header">
         <span class="icon">&#128332;</span>
         <h3>Collecte globale</h3>
-        <span style="margin-left:auto;font-family:var(--font-mono);font-size:0.85rem;color:var(--text-muted);">Objectif : ${fmtEur(objectifTotal)}</span>
       </div>
       <div class="consolidated-stats">
         <div class="stat-item">
@@ -899,21 +898,21 @@ function renderOverview(container) {
           <div class="stat-label">Total collect&eacute;</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value text-blue" data-counter="${objectifTotal}" data-suffix=" \u20AC"></div>
-          <div class="stat-label">Objectif total</div>
+          <div class="stat-value text-blue" data-counter="${grandPromis}" data-suffix=" \u20AC"></div>
+          <div class="stat-label">Total promis</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value text-orange" data-counter="${objectifTotal - grandTotal}" data-suffix=" \u20AC"></div>
+          <div class="stat-value text-orange" data-counter="${grandPromis - grandTotal}" data-suffix=" \u20AC"></div>
           <div class="stat-label">Reste &agrave; collecter</div>
         </div>
         <div class="stat-item">
-          <div class="stat-value text-teal" data-counter="${pct(grandTotal, objectifTotal)}" data-suffix=" %"></div>
+          <div class="stat-value text-teal" data-counter="${grandPromis > 0 ? pct(grandTotal, grandPromis) : 0}" data-suffix=" %"></div>
           <div class="stat-label">Progression</div>
         </div>
       </div>
       <div class="progress-stacked progress-stacked-lg">
-        <div class="bar-segment" style="width:${pct(totalRecu, objectifTotal)}%;background:var(--blue);" title="Classique: ${fmtEur(totalRecu)}"></div>
-        <div class="bar-segment" style="width:${pct(recu10k, objectifTotal)}%;background:var(--purple);" title="10K: ${fmtEur(recu10k)}"></div>
+        <div class="bar-segment" style="width:${grandPromis > 0 ? pct(totalRecu, grandPromis) : 0}%;background:var(--blue);" title="Classique: ${fmtEur(totalRecu)}"></div>
+        <div class="bar-segment" style="width:${grandPromis > 0 ? pct(recu10k, grandPromis) : 0}%;background:var(--purple);" title="10K: ${fmtEur(recu10k)}"></div>
       </div>
       <div style="display:flex;gap:20px;margin-top:10px;">
         <span style="font-size:0.78rem;color:var(--text-muted);display:flex;align-items:center;gap:6px;">

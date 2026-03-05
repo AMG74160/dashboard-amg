@@ -526,12 +526,20 @@ body {
 }
 .btn-action.purple { background: var(--gradient-purple); }
 .action-result {
-  margin-top: 16px; padding: 12px; border-radius: var(--radius-xs);
-  background: rgba(255,255,255,0.03); font-family: var(--font-mono);
-  font-size: 0.78rem; color: var(--text-secondary); max-height: 200px;
+  margin-top: 16px; padding: 16px; border-radius: var(--radius-sm);
+  background: rgba(255,255,255,0.03); font-family: var(--font-main);
+  font-size: 0.85rem; color: var(--text-secondary); max-height: 400px;
   overflow-y: auto; display: none; word-break: break-word;
 }
 .action-result.show { display: block; }
+.sync-stat {
+  display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+  background: rgba(255,255,255,0.04); border-radius: var(--radius-xs);
+  border: 1px solid var(--border-glass);
+}
+.sync-stat .sync-icon { font-size: 1.1rem; }
+.sync-stat span:nth-child(2) { flex: 1; color: var(--text-muted); font-size: 0.8rem; }
+.sync-stat strong { font-family: var(--font-mono); color: var(--text-primary); font-size: 0.9rem; }
 .spinner {
   display: inline-block; width: 18px; height: 18px;
   border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff;
@@ -1600,7 +1608,27 @@ function renderActions(container) {
     resEl.textContent = 'En cours...';
     try {
       const result = await apiPost({ action: 'sync' });
-      resEl.textContent = JSON.stringify(result, null, 2);
+      if (result.status === 'success' && result.data) {
+        const d = result.data;
+        const fmt = n => Number(n||0).toLocaleString('fr-FR');
+        resEl.innerHTML = `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+            <span style="font-size:1.3rem;">&#9989;</span>
+            <strong style="color:var(--green);">${result.message}</strong>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="sync-stat"><span class="sync-icon">&#128200;</span><span>Matches</span><strong>${fmt(d.matches)}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128165;</span><span>Collisions</span><strong>${fmt(d.collisions)}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#127873;</span><span>Spontan&eacute;s</span><strong>${fmt(d.spontanes)}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128683;</span><span>Cotisations exclues</span><strong>${fmt(d.cotisationsExclues)}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128176;</span><span>Total promis</span><strong>${fmt(d.totalPromis)} &euro;</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#9989;</span><span>Total re&ccedil;u</span><strong>${fmt(d.totalRecu)} &euro;</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128256;</span><span>Bi-campagne</span><strong>${fmt(d.biCampagne)}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128231;</span><span>Emails enrichis</span><strong>${fmt((d.emailsEnrichis?.paypal||0)+(d.emailsEnrichis?.helloasso||0)+(d.emailsEnrichis?.gala||0))}</strong></div>
+          </div>`;
+      } else {
+        resEl.textContent = result.message || JSON.stringify(result, null, 2);
+      }
     } catch (err) {
       resEl.textContent = 'Erreur : ' + err.message;
     }

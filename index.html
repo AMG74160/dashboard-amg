@@ -873,8 +873,8 @@ function renderOverview(container) {
         </div>
       </div>
       <div class="progress-stacked">
-        <div class="bar-segment" style="width:${pct(totalRecu, grandPromis)}%;background:var(--blue);" title="Classique"></div>
-        <div class="bar-segment" style="width:${pct(recu10k, grandPromis)}%;background:var(--purple);" title="10K"></div>
+        <div class="bar-segment" style="width:${pct(totalRecu, grandPromis)}%;background:var(--blue);" title="Classique: ${fmtEur(totalRecu)}"></div>
+        <div class="bar-segment" style="width:${pct(recu10k, grandPromis)}%;background:var(--purple);" title="10K: ${fmtEur(recu10k)}"></div>
       </div>
       <div style="display:flex;gap:16px;margin-top:8px;">
         <span style="font-size:0.72rem;color:var(--text-muted);display:flex;align-items:center;gap:4px;">

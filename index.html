@@ -751,7 +751,7 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     state.login = login || null;
     state.password = password;
     const result = await apiGet('dashboard');
-    if (result.status !== 'ok') {
+    if (result.status !== 'success') {
       errEl.textContent = result.message || 'Identifiants incorrects';
       btn.disabled = false; btn.textContent = 'Se connecter';
       return;
@@ -848,6 +848,7 @@ function renderOverview(container) {
   const monthlyData = computeMonthlyData(d, c10k);
 
   const objectifClassique = 525000;
+  const objectif10K = 1000000;
 
   container.innerHTML = `
     <div class="page-header">
@@ -945,7 +946,7 @@ function renderOverview(container) {
         <h3>Campagne 10K</h3>
         <svg class="gauge-svg" viewBox="0 0 200 110" id="gauge10K"></svg>
         <div class="gauge-value text-purple" data-counter="${recu10k}" data-suffix=" \u20AC"></div>
-        <div class="gauge-label">Objectif : ${fmtEur(prevu10k)}</div>
+        <div class="gauge-label">Objectif : ${fmtEur(objectif10K)}</div>
         ${c10k ? `<div class="gauge-badges">
           <span class="badge badge-complet badge-count">${c10k.kpis.nbComplet || 0} complets</span>
           <span class="badge badge-partiel badge-count">${c10k.kpis.nbPartiel || 0} partiels</span>
@@ -973,7 +974,7 @@ function renderOverview(container) {
 
   // Render gauges
   renderGaugeSVG('gaugeClassique', pct(totalRecu, objectifClassique), 'var(--blue)');
-  renderGaugeSVG('gauge10K', pct(recu10k, prevu10k || 1), 'var(--purple)');
+  renderGaugeSVG('gauge10K', pct(recu10k, objectif10K), 'var(--purple)');
 }
 
 function computeMonthlyData(data, c10k) {
@@ -1573,7 +1574,7 @@ function renderActions(container) {
     btn.innerHTML = '<span class="spinner"></span>Chargement...';
     try {
       const result = await apiGet('recus');
-      if (result.status === 'ok' && result.stats) {
+      if (result.status === 'success' && result.stats) {
         const s = result.stats;
         statsEl.innerHTML = `
           <div class="stat-grid">
@@ -1642,7 +1643,7 @@ function showSkeleton(container) {
     document.getElementById('appShell').style.display = 'block';
     showSkeleton(document.querySelector('.main-content'));
     apiGet('dashboard').then(result => {
-      if (result.status === 'ok') {
+      if (result.status === 'success') {
         state.role = result.role;
         state.data = result.data || [];
         state.totalCheques = result.totalCheques || 0;

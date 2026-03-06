@@ -545,11 +545,17 @@ body {
 
 /* ========== ROW EDIT BUTTONS ========== */
 .btn-edit-row {
-  padding: 3px 8px; border: 1px solid var(--border-glass-strong); border-radius: 6px;
-  background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 0.78rem;
+  padding: 6px 12px; border: 1px solid rgba(0,117,255,0.4); border-radius: 8px;
+  background: rgba(0,117,255,0.12); color: #3a94ff; font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; transition: all var(--transition); letter-spacing: 0.5px;
+}
+.btn-edit-row:hover { background: rgba(0,117,255,0.25); color: #fff; border-color: var(--blue); box-shadow: 0 0 12px rgba(0,117,255,0.3); }
+.btn-relance {
+  padding: 6px 10px; border: 1px solid rgba(0,180,100,0.4); border-radius: 8px;
+  background: rgba(0,180,100,0.12); color: #00B574; font-size: 0.9rem;
   cursor: pointer; transition: all var(--transition);
 }
-.btn-edit-row:hover { background: rgba(0,117,255,0.15); color: var(--blue-light); border-color: var(--blue); }
+.btn-relance:hover { background: rgba(0,180,100,0.25); color: #fff; border-color: #00B574; }
 
 /* ========== ACTIONS PAGE ========== */
 .action-grid {

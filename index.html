@@ -2254,12 +2254,19 @@ async function lancerMiseAJour(btn, resEl) {
     if (result.status === 'success') {
       const d = result.data || {};
       const r = result.recus || {};
+      const ha = result.importHA || {};
       const f = n => Number(n||0).toLocaleString('fr-FR');
       resEl.style.borderLeft = '3px solid var(--green)';
       resEl.innerHTML = `
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
           <span style="font-size:1.5rem;">&#9989;</span>
           <strong style="color:var(--green);">${result.message}</strong>
+        </div>
+        <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border-glass);font-size:0.82rem;">
+          <strong>&#127760; Import HelloAsso :</strong>
+          ${ha.status === 'ok' ? `<span style="color:var(--green);">${f(ha.nouveaux)} nouveau(x)</span> sur ${f(ha.total)} paiement(s) API` :
+            ha.status === 'error' ? `<span style="color:var(--red);">Erreur : ${ha.message || 'inconnue'}</span>` :
+            '<span style="color:var(--text-muted);">non ex\u00e9cut\u00e9</span>'}
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.82rem;">
           <div class="sync-stat"><span class="sync-icon">&#128200;</span><span>Matches</span><strong>${f(d.matches)}</strong></div>

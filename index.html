@@ -657,6 +657,10 @@ body {
         <span class="nav-icon">&#127775;</span>
         <span class="nav-label">Campagne 10K</span>
       </button>
+      <button class="nav-item admin-only" data-page="recus" aria-label="Reçus fiscaux">
+        <span class="nav-icon">&#128220;</span>
+        <span class="nav-label">Re&ccedil;us fiscaux</span>
+      </button>
       <button class="nav-item admin-only" data-page="alertes" aria-label="Alertes">
         <span class="nav-icon">&#128680;</span>
         <span class="nav-label">Alertes</span>
@@ -841,6 +845,7 @@ function navigateTo(page) {
     case 'overview': renderOverview(content); break;
     case 'donateurs': renderDonateurs(content); break;
     case 'campagne10k': renderCampagne10K(content); break;
+    case 'recus': renderRecusFiscaux(content); break;
     case 'alertes': renderAlertes(content); break;
     case 'actions': renderActions(content); break;
   }
@@ -1484,6 +1489,172 @@ function render10KTable() {
 }
 
 // ==================== PAGE: ALERTES ====================
+// ==================== PAGE: RECUS FISCAUX ====================
+function renderRecusFiscaux(container) {
+  container.innerHTML = `
+    <div class="page-header">
+      <h1>Re&ccedil;us fiscaux</h1>
+      <p>Suivi de la g&eacute;n&eacute;ration et de l'envoi des re&ccedil;us fiscaux</p>
+    </div>
+    <div id="recusPageLoading" style="text-align:center;padding:40px;color:var(--text-secondary);">
+      <span class="spinner"></span> Chargement des donn&eacute;es...
+    </div>
+    <div id="recusPageContent" style="display:none;"></div>
+  `;
+
+  apiGet('recus_liste').then(result => {
+    document.getElementById('recusPageLoading').style.display = 'none';
+    const contentEl = document.getElementById('recusPageContent');
+    contentEl.style.display = 'block';
+
+    if (result.status !== 'success') {
+      contentEl.innerHTML = '<p style="color:var(--red);">Erreur : ' + (result.message || 'Impossible de charger') + '</p>';
+      return;
+    }
+
+    const stats = result.stats || {};
+    const liste = result.data || [];
+    const fmtEur = n => Number(n||0).toLocaleString('fr-FR', {minimumFractionDigits:0, maximumFractionDigits:0});
+    const pctEnvoi = stats.total > 0 ? Math.round((stats.envoyes / stats.total) * 100) : 0;
+    const parMode = stats.parMode || {};
+
+    // KPIs
+    contentEl.innerHTML = `
+      <div class="kpi-grid" style="margin-bottom:24px;">
+        <div class="kpi-card glass" style="border-left:3px solid var(--blue);">
+          <div class="kpi-label">Total re&ccedil;us</div>
+          <div class="kpi-value" data-counter="${stats.total || 0}"></div>
+        </div>
+        <div class="kpi-card glass" style="border-left:3px solid var(--green);">
+          <div class="kpi-label">Envoy&eacute;s</div>
+          <div class="kpi-value text-green" data-counter="${stats.envoyes || 0}"></div>
+        </div>
+        <div class="kpi-card glass" style="border-left:3px solid var(--orange);">
+          <div class="kpi-label">En attente</div>
+          <div class="kpi-value text-orange" data-counter="${stats.enAttente || 0}"></div>
+        </div>
+        <div class="kpi-card glass" style="border-left:3px solid var(--red);">
+          <div class="kpi-label">Sans contact</div>
+          <div class="kpi-value text-red" data-counter="${stats.sansContact || 0}"></div>
+        </div>
+        <div class="kpi-card glass" style="border-left:3px solid var(--purple);">
+          <div class="kpi-label">Montant total</div>
+          <div class="kpi-value text-purple" data-counter="${Math.round(stats.montantTotal || 0)}" data-suffix=" &euro;"></div>
+        </div>
+        <div class="kpi-card glass" style="border-left:3px solid var(--teal);">
+          <div class="kpi-label">Taux d'envoi</div>
+          <div class="kpi-value" style="color:var(--teal);" data-counter="${pctEnvoi}" data-suffix=" %"></div>
+        </div>
+      </div>
+
+      <!-- Barre de progression -->
+      <div class="glass" style="padding:16px 20px;border-radius:var(--radius-sm);margin-bottom:24px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span style="color:var(--text-secondary);font-size:0.85rem;">Progression des envois</span>
+          <span style="color:var(--text-primary);font-weight:600;">${stats.envoyes || 0} / ${stats.total || 0}</span>
+        </div>
+        <div style="height:10px;background:rgba(255,255,255,0.08);border-radius:10px;overflow:hidden;">
+          <div style="height:100%;width:${pctEnvoi}%;background:var(--gradient-green);border-radius:10px;transition:width 1s ease;"></div>
+        </div>
+        <div style="display:flex;gap:16px;margin-top:10px;font-size:0.8rem;">
+          <span style="color:var(--green);">&#9679; Email : ${parMode.Email || 0}</span>
+          <span style="color:var(--teal);">&#9679; WhatsApp : ${parMode.WhatsApp || 0}</span>
+          <span style="color:var(--orange);">&#9679; Non envoy&eacute; : ${parMode['Non envoyé'] || 0}</span>
+        </div>
+      </div>
+
+      <!-- Filtres -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+        <button class="btn-filter recus-filter active" data-rf="tous">Tous (${liste.length})</button>
+        <button class="btn-filter recus-filter" data-rf="envoyes">Envoy&eacute;s (${liste.filter(r=>r.envoye==='Oui').length})</button>
+        <button class="btn-filter recus-filter" data-rf="attente">En attente (${liste.filter(r=>r.envoye!=='Oui').length})</button>
+        <button class="btn-filter recus-filter" data-rf="sans_contact">Sans contact (${liste.filter(r=>!r.email && (!r.telephone || r.telephone==='INVALIDE')).length})</button>
+        <input type="text" id="recusSearch" placeholder="Rechercher un nom..." style="flex:1;min-width:180px;padding:8px 12px;border-radius:var(--radius-sm);border:1px solid var(--border-glass);background:var(--bg-glass);color:var(--text-primary);font-size:0.85rem;">
+      </div>
+
+      <!-- Tableau -->
+      <div class="table-wrapper glass" style="border-radius:var(--radius-sm);overflow:auto;max-height:60vh;">
+        <table class="data-table" id="recusTable">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Montant</th>
+              <th>N&deg; Re&ccedil;u</th>
+              <th>Email</th>
+              <th>T&eacute;l</th>
+              <th>Statut</th>
+              <th>Mode</th>
+              <th>Date envoi</th>
+              <th>PDF</th>
+            </tr>
+          </thead>
+          <tbody id="recusTableBody"></tbody>
+        </table>
+      </div>
+    `;
+
+    // Animate counters
+    contentEl.querySelectorAll('[data-counter]').forEach(el => {
+      animateCounter(el, parseFloat(el.dataset.counter), 1000, el.dataset.suffix || '');
+    });
+
+    const tbody = document.getElementById('recusTableBody');
+    let currentFilter = 'tous';
+    let searchTerm = '';
+
+    function renderTable() {
+      let filtered = liste;
+      if (currentFilter === 'envoyes') filtered = liste.filter(r => r.envoye === 'Oui');
+      else if (currentFilter === 'attente') filtered = liste.filter(r => r.envoye !== 'Oui');
+      else if (currentFilter === 'sans_contact') filtered = liste.filter(r => !r.email && (!r.telephone || r.telephone === 'INVALIDE'));
+
+      if (searchTerm) {
+        const q = searchTerm.toLowerCase();
+        filtered = filtered.filter(r => (r.nom + ' ' + r.prenom).toLowerCase().includes(q) || (r.numRecu||'').toLowerCase().includes(q));
+      }
+
+      tbody.innerHTML = filtered.map(r => {
+        const statutClass = r.envoye === 'Oui' ? 'badge-complet' : 'badge-partiel';
+        const statutText = r.envoye === 'Oui' ? 'Envoy&eacute;' : 'En attente';
+        const modeText = r.modeEnvoi || '-';
+        const telShort = r.telephone && r.telephone !== 'INVALIDE' ? r.telephone.slice(-4) : '-';
+        const pdfLink = r.lienPDF ? '<a href="' + r.lienPDF + '" target="_blank" style="color:var(--blue);">PDF</a>' : '-';
+        return '<tr>' +
+          '<td><strong>' + (r.prenom || '') + ' ' + (r.nom || '') + '</strong></td>' +
+          '<td style="text-align:right;font-weight:600;">' + fmtEur(r.montant) + ' &euro;</td>' +
+          '<td style="font-size:0.75rem;color:var(--text-muted);">' + (r.numRecu || '') + '</td>' +
+          '<td>' + (r.email ? '&#9989;' : '&#10060;') + '</td>' +
+          '<td>' + (r.telephone && r.telephone !== 'INVALIDE' ? '&#9989;' : '&#10060;') + '</td>' +
+          '<td><span class="badge ' + statutClass + '">' + statutText + '</span></td>' +
+          '<td style="font-size:0.8rem;">' + modeText + '</td>' +
+          '<td style="font-size:0.8rem;color:var(--text-muted);">' + (r.dateEnvoi || '-') + '</td>' +
+          '<td>' + pdfLink + '</td>' +
+          '</tr>';
+      }).join('');
+    }
+
+    renderTable();
+
+    // Filters
+    contentEl.querySelectorAll('.recus-filter').forEach(btn => {
+      btn.addEventListener('click', () => {
+        contentEl.querySelectorAll('.recus-filter').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentFilter = btn.dataset.rf;
+        renderTable();
+      });
+    });
+
+    // Search
+    document.getElementById('recusSearch').addEventListener('input', (e) => {
+      searchTerm = e.target.value;
+      renderTable();
+    });
+  }).catch(err => {
+    document.getElementById('recusPageLoading').innerHTML = '<p style="color:var(--red);">Erreur : ' + err.message + '</p>';
+  });
+}
+
 function renderAlertes(container) {
   const critiques = [];
   const avertissements = [];

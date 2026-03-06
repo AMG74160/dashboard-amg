@@ -443,8 +443,9 @@ body {
 .btn-export:hover { background: rgba(79,209,197,0.2); }
 
 .table-container {
-  border-radius: var(--radius); overflow: hidden;
+  border-radius: var(--radius); overflow-x: auto; overflow-y: hidden;
   border: 1px solid var(--border-glass);
+  -webkit-overflow-scrolling: touch;
 }
 .data-table {
   width: 100%; border-collapse: collapse; font-size: 0.85rem;
@@ -465,6 +466,10 @@ body {
 }
 .data-table tbody tr { transition: background var(--transition); }
 .data-table tbody tr:hover { background: rgba(255,255,255,0.05); }
+.data-table th:last-child, .data-table td:last-child {
+  position: sticky; right: 0; background: rgba(6,11,38,0.95);
+  backdrop-filter: blur(8px); z-index: 2;
+}
 .row-count {
   font-size: 0.8rem; color: var(--text-muted); margin-top: 12px; text-align: right;
 }

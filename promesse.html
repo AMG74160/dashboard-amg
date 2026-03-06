@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Promesse de don — AMG</title>
+<link rel="icon" href="logo_amg_petit.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  background: #060B26;
+  background-image:
+    radial-gradient(ellipse at 20% 50%, rgba(0,117,255,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(87,44,255,0.04) 0%, transparent 50%);
+  color: #fff; min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+
+/* Geometric background */
+.geo-bg {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='0.5'%3E%3Cpolygon points='40,8 49.3,20.7 64.7,15.3 59.3,30.7 72,40 59.3,49.3 64.7,64.7 49.3,59.3 40,72 30.7,59.3 15.3,64.7 20.7,49.3 8,40 20.7,30.7 15.3,15.3 30.7,20.7'/%3E%3Cpolygon points='40,18 46,26 56,22 52,32 62,40 52,48 56,58 46,54 40,62 34,54 24,58 28,48 18,40 28,32 24,22 34,26'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.form-card {
+  width: 100%; max-width: 440px; padding: 40px 32px;
+  background: linear-gradient(127deg, rgba(5,11,39,0.94) 0%, rgba(9,13,35,0.49) 100%);
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px; text-align: center;
+  position: relative; z-index: 1;
+}
+.form-card img {
+  max-width: 120px; margin-bottom: 24px;
+  filter: drop-shadow(0 4px 20px rgba(0,117,255,0.2));
+  mix-blend-mode: screen;
+}
+.form-card h2 { font-size: 1.3rem; font-weight: 700; margin-bottom: 6px; }
+.form-card .subtitle { font-size: 0.85rem; color: #718096; margin-bottom: 28px; }
+
+.field { margin-bottom: 16px; text-align: left; }
+.field label {
+  display: block; font-size: 0.8rem; font-weight: 500; color: #A0AEC0;
+  margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.field input {
+  width: 100%; padding: 14px 16px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px; color: #fff;
+  font-family: inherit; font-size: 1rem;
+  outline: none;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+.field input:focus {
+  border-color: #0075FF;
+  box-shadow: 0 0 0 3px rgba(0,117,255,0.2);
+}
+.field input::placeholder { color: #718096; }
+
+.radio-group { display: flex; gap: 12px; margin-bottom: 24px; }
+.radio-group > div { flex: 1; }
+.radio-group label {
+  display: flex; align-items: center; justify-content: center;
+  padding: 12px; background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px; cursor: pointer;
+  transition: all 0.3s; font-size: 0.9rem;
+}
+.radio-group input { display: none; }
+.radio-group input:checked + label {
+  background: rgba(0,117,255,0.15);
+  border-color: #0075FF; color: #3a94ff;
+}
+
+.btn-submit {
+  width: 100%; padding: 14px; border: none; border-radius: 12px;
+  background: linear-gradient(135deg, #0075FF, #3a94ff);
+  color: #fff; font-family: inherit; font-size: 1rem; font-weight: 600;
+  cursor: pointer; transition: transform 0.3s, box-shadow 0.3s;
+}
+.btn-submit:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(0,117,255,0.4);
+}
+.btn-submit:active { transform: translateY(0); }
+.btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.spinner {
+  display: inline-block; width: 18px; height: 18px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle; margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.success-screen { display: none; text-align: center; padding: 20px 0; }
+.success-screen .check { font-size: 4rem; margin-bottom: 16px; }
+.success-screen h3 { font-size: 1.3rem; color: #00B574; margin-bottom: 12px; }
+.success-screen p { color: #A0AEC0; font-size: 0.95rem; line-height: 1.5; }
+.success-screen .dua {
+  margin-top: 20px; font-size: 1.1rem; color: #fbbf24;
+  font-style: italic;
+}
+
+.error-msg { color: #f87171; font-size: 0.85rem; margin-top: 12px; min-height: 20px; }
+
+/* Montant presets */
+.montant-presets {
+  display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;
+}
+.montant-preset {
+  padding: 8px 16px; border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px; background: rgba(255,255,255,0.04);
+  color: #A0AEC0; font-family: inherit; font-size: 0.85rem;
+  cursor: pointer; transition: all 0.3s;
+}
+.montant-preset:hover, .montant-preset.selected {
+  background: rgba(0,117,255,0.15);
+  border-color: #0075FF; color: #3a94ff;
+}
+
+@media (max-width: 480px) {
+  .form-card { padding: 28px 20px; }
+  .form-card img { max-width: 90px; margin-bottom: 18px; }
+  .form-card h2 { font-size: 1.15rem; }
+}
+</style>
+</head>
+<body>
+<div class="geo-bg"></div>
+
+<div class="form-card">
+  <div id="formView">
+    <img src="logo-amg-grand.png" alt="AMG" />
+    <h2>Promesse de don</h2>
+    <p class="subtitle">Gala 2026 &mdash; Association Musulmane du Genevois</p>
+
+    <form id="pledgeForm">
+      <div class="field">
+        <label>Nom *</label>
+        <input type="text" id="fNom" required placeholder="VOTRE NOM" autocomplete="family-name" />
+      </div>
+      <div class="field">
+        <label>Pr&eacute;nom *</label>
+        <input type="text" id="fPrenom" required placeholder="Votre pr&eacute;nom" autocomplete="given-name" />
+      </div>
+      <div class="field">
+        <label>T&eacute;l&eacute;phone</label>
+        <input type="tel" id="fTel" placeholder="06 12 34 56 78" autocomplete="tel" />
+      </div>
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="fEmail" placeholder="email@exemple.com" autocomplete="email" />
+      </div>
+      <div class="field">
+        <label>Montant promis (EUR) *</label>
+        <div class="montant-presets">
+          <button type="button" class="montant-preset" data-val="100">100</button>
+          <button type="button" class="montant-preset" data-val="200">200</button>
+          <button type="button" class="montant-preset" data-val="500">500</button>
+          <button type="button" class="montant-preset" data-val="1000">1 000</button>
+          <button type="button" class="montant-preset" data-val="2000">2 000</button>
+          <button type="button" class="montant-preset" data-val="5000">5 000</button>
+        </div>
+        <input type="number" id="fMontant" required min="1" step="1" inputmode="numeric" placeholder="Autre montant" />
+      </div>
+
+      <label style="font-size:0.8rem;color:#A0AEC0;text-transform:uppercase;letter-spacing:0.5px;display:block;text-align:left;margin-bottom:6px;">Type</label>
+      <div class="radio-group">
+        <div><input type="radio" name="type" id="typeUnique" value="Unique" checked /><label for="typeUnique">Unique</label></div>
+        <div><input type="radio" name="type" id="typeMensuel" value="Mensuel" /><label for="typeMensuel">Mensuel</label></div>
+      </div>
+
+      <button type="submit" class="btn-submit" id="btnSubmit">Enregistrer ma promesse</button>
+      <div class="error-msg" id="errorMsg"></div>
+    </form>
+  </div>
+
+  <div id="successView" class="success-screen">
+    <div class="check">&#9989;</div>
+    <h3>Merci pour votre g&eacute;n&eacute;rosit&eacute; !</h3>
+    <p id="successMsg"></p>
+    <p class="dua">&#1580;&#1586;&#1575;&#1603;&#1605; &#1575;&#1604;&#1604;&#1607; &#1582;&#1610;&#1585;&#1575;&#1611;</p>
+    <p style="margin-top:20px;font-size:0.8rem;color:#718096;">Qu'Allah vous r&eacute;compense pour votre g&eacute;n&eacute;rosit&eacute;.</p>
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbxwjvKD1dpxuOzhnzWIMzgwz3LV5k58-Qy5jgJui6umdJdE12Bm-BhW_6O4fIibceK_/exec';
+
+// Montant presets
+document.querySelectorAll('.montant-preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.montant-preset').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('fMontant').value = btn.dataset.val;
+  });
+});
+
+document.getElementById('fMontant').addEventListener('input', () => {
+  document.querySelectorAll('.montant-preset').forEach(b => b.classList.remove('selected'));
+});
+
+// Form submit
+document.getElementById('pledgeForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const btn = document.getElementById('btnSubmit');
+  const errEl = document.getElementById('errorMsg');
+  errEl.textContent = '';
+
+  const body = {
+    action: 'ajouter_promesse',
+    nom: document.getElementById('fNom').value.trim(),
+    prenom: document.getElementById('fPrenom').value.trim(),
+    telephone: document.getElementById('fTel').value.trim(),
+    email: document.getElementById('fEmail').value.trim(),
+    montant: parseFloat(document.getElementById('fMontant').value) || 0,
+    type: document.querySelector('input[name="type"]:checked').value,
+  };
+
+  if (!body.nom || !body.prenom || body.montant <= 0) {
+    errEl.textContent = 'Veuillez remplir le nom, le pr\u00e9nom et le montant.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Envoi en cours...';
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(body),
+      redirect: 'follow',
+    });
+    const result = await resp.json();
+
+    if (result.status === 'success') {
+      document.getElementById('formView').style.display = 'none';
+      document.getElementById('successView').style.display = 'block';
+      document.getElementById('successMsg').textContent =
+        'Votre promesse de ' + Number(body.montant).toLocaleString('fr-FR') + ' \u20AC a bien \u00E9t\u00E9 enregistr\u00E9e.';
+    } else {
+      errEl.textContent = result.message || 'Erreur inconnue. Veuillez r\u00E9essayer.';
+    }
+  } catch (err) {
+    errEl.textContent = 'Erreur de connexion. V\u00E9rifiez votre connexion internet.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Enregistrer ma promesse';
+});
+</script>
+</body>
+</html>

@@ -504,6 +504,10 @@ body {
 .action-card {
   padding: 28px;
 }
+.action-card-icon {
+  width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center;
+  justify-content: center; font-size: 1.2rem; margin-bottom: 14px;
+}
 .action-card h3 {
   font-size: 1rem; font-weight: 600; margin-bottom: 6px;
 }
@@ -764,12 +768,16 @@ body {
         <span class="nav-icon">&#127969;</span>
         <span class="nav-label">Vue d'ensemble</span>
       </button>
-      <button class="nav-item admin-only" data-page="donateurs" aria-label="Donateurs">
+      <button class="nav-item admin-only" data-page="gala2025" aria-label="Gala 2025">
         <span class="nav-icon">&#128101;</span>
-        <span class="nav-label">Donateurs</span>
+        <span class="nav-label">Gala 2025</span>
+      </button>
+      <button class="nav-item admin-only" data-page="gala2026" aria-label="Gala 2026">
+        <span class="nav-icon">&#127775;</span>
+        <span class="nav-label">Gala 2026</span>
       </button>
       <button class="nav-item admin-only" data-page="campagne10k" aria-label="Campagne 10K">
-        <span class="nav-icon">&#127775;</span>
+        <span class="nav-icon">&#11088;</span>
         <span class="nav-label">Campagne 10K</span>
       </button>
       <button class="nav-item admin-only" data-page="recus" aria-label="Reçus fiscaux">
@@ -958,7 +966,8 @@ function navigateTo(page) {
   const content = document.getElementById('pageContent');
   switch (page) {
     case 'overview': renderOverview(content); break;
-    case 'donateurs': renderDonateurs(content); break;
+    case 'gala2025': renderGala2025(content); break;
+    case 'gala2026': renderGala2026(content); break;
     case 'campagne10k': renderCampagne10K(content); break;
     case 'recus': renderRecusFiscaux(content); break;
     case 'alertes': renderAlertes(content); break;
@@ -1300,16 +1309,16 @@ function renderMiniGauge(containerId, pctValue, color) {
   }
 }
 
-// ==================== PAGE: DONATEURS ====================
-function renderDonateurs(container) {
+// ==================== PAGE: GALA 2025 ====================
+function renderGala2025(container) {
   state.filter = 'tous';
   state.search = '';
   state.sortCol = null;
 
   container.innerHTML = `
     <div class="page-header">
-      <h1>Donateurs classiques</h1>
-      <p>Liste des donateurs et suivi des paiements</p>
+      <h1>Gala 2025</h1>
+      <p>Donateurs et suivi des paiements — Gala 2025</p>
     </div>
     <div class="table-controls">
       <div class="search-wrapper">
@@ -1455,6 +1464,163 @@ function exportCSV(type) {
   a.href = URL.createObjectURL(blob);
   a.download = type === 'classique' ? 'donateurs_classique.csv' : 'campagne_10k.csv';
   a.click();
+}
+
+// ==================== PAGE: GALA 2026 ====================
+function renderGala2026(container) {
+  container.innerHTML = `
+    <div class="page-header">
+      <h1>Gala 2026</h1>
+      <p>Donateurs et suivi des paiements — Gala 2026</p>
+    </div>
+    <div class="kpi-grid" id="gala2026Kpis">
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+      <div class="skeleton skeleton-card"></div>
+    </div>
+    <div class="table-controls">
+      <div class="search-wrapper">
+        <input type="text" class="search-box" id="searchGala2026" placeholder="Rechercher un donateur..." aria-label="Rechercher" />
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" data-filter="tous">Tous</button>
+        <button class="filter-btn" data-filter="Complet">Complet</button>
+        <button class="filter-btn" data-filter="Partiel">Partiel</button>
+        <button class="filter-btn" data-filter="Non pay\u00e9">Non pay\u00e9</button>
+      </div>
+    </div>
+    <div class="table-container glass">
+      <table class="data-table" id="tableGala2026">
+        <thead>
+          <tr>
+            <th data-col="nom">Nom <span class="sort-arrow"></span></th>
+            <th data-col="prenom">Pr&eacute;nom <span class="sort-arrow"></span></th>
+            <th data-col="montantPromis">Promis <span class="sort-arrow"></span></th>
+            <th data-col="montantRecu">Re&ccedil;u <span class="sort-arrow"></span></th>
+            <th data-col="reste">Reste <span class="sort-arrow"></span></th>
+            <th data-col="statut">Statut <span class="sort-arrow"></span></th>
+            <th data-col="sources">Sources</th>
+            <th data-col="datesPaiement">Date</th>
+          </tr>
+        </thead>
+        <tbody id="tbodyGala2026"></tbody>
+      </table>
+    </div>
+    <div class="row-count" id="rowCountGala2026"></div>
+  `;
+
+  // Fetch Gala 2026 data
+  state.gala2026 = null;
+  state.filterGala2026 = 'tous';
+  state.searchGala2026 = '';
+  state.sortColGala2026 = null;
+  state.sortDirGala2026 = 1;
+
+  apiGet('dashboard_gala2').then(result => {
+    if (result.status === 'success') {
+      state.gala2026 = result;
+      const k = result.kpis;
+      document.getElementById('gala2026Kpis').innerHTML = `
+        <div class="kpi-card glass">
+          <div class="kpi-icon">&#128176;</div>
+          <div class="kpi-label">Total promis</div>
+          <div class="kpi-value text-blue" data-counter="${k.totalPromis}" data-suffix=" \u20AC"></div>
+          <div class="kpi-sub">${k.nbPromesses || k.nbDonateurs} promesse(s)</div>
+        </div>
+        <div class="kpi-card glass">
+          <div class="kpi-icon">&#9989;</div>
+          <div class="kpi-label">Total re&ccedil;u</div>
+          <div class="kpi-value text-green" data-counter="${k.totalRecu}" data-suffix=" \u20AC"></div>
+          <div class="kpi-sub">${k.nbComplet} complet(s)</div>
+        </div>
+        <div class="kpi-card glass">
+          <div class="kpi-icon">&#128200;</div>
+          <div class="kpi-label">Taux</div>
+          <div class="kpi-value text-teal" data-counter="${parseFloat(k.taux) || 0}" data-suffix=" %"></div>
+          <div class="kpi-sub">${k.nbPartiel} partiel(s)</div>
+        </div>
+        <div class="kpi-card glass">
+          <div class="kpi-icon">&#128680;</div>
+          <div class="kpi-label">Reste</div>
+          <div class="kpi-value text-orange" data-counter="${k.reste}" data-suffix=" \u20AC"></div>
+          <div class="kpi-sub">${k.nbNonPaye} non pay\u00e9(s)</div>
+        </div>
+      `;
+      document.querySelectorAll('#gala2026Kpis [data-counter]').forEach(el => {
+        animateCounter(el, parseFloat(el.dataset.counter) || 0, 1200, el.dataset.suffix || '');
+      });
+      renderGala2026Table();
+    } else {
+      document.getElementById('gala2026Kpis').innerHTML = '<p class="text-muted" style="padding:16px;">Aucune donn\u00e9e Gala 2026 disponible.</p>';
+    }
+  }).catch(() => {
+    document.getElementById('gala2026Kpis').innerHTML = '<p class="text-muted" style="padding:16px;">Erreur de chargement.</p>';
+  });
+
+  // Events
+  document.getElementById('searchGala2026').addEventListener('input', (e) => {
+    state.searchGala2026 = e.target.value.toLowerCase();
+    renderGala2026Table();
+  });
+
+  container.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.filterGala2026 = btn.dataset.filter;
+      renderGala2026Table();
+    });
+  });
+
+  document.getElementById('tableGala2026').querySelector('thead').addEventListener('click', (e) => {
+    const th = e.target.closest('th');
+    if (!th || !th.dataset.col) return;
+    if (state.sortColGala2026 === th.dataset.col) { state.sortDirGala2026 *= -1; }
+    else { state.sortColGala2026 = th.dataset.col; state.sortDirGala2026 = 1; }
+    renderGala2026Table();
+  });
+}
+
+function renderGala2026Table() {
+  if (!state.gala2026) return;
+  let rows = [...state.gala2026.data];
+
+  if (state.filterGala2026 !== 'tous') {
+    rows = rows.filter(r => r.statut === state.filterGala2026);
+  }
+  if (state.searchGala2026) {
+    rows = rows.filter(r => ((r.nom || '') + ' ' + (r.prenom || '')).toLowerCase().includes(state.searchGala2026));
+  }
+  if (state.sortColGala2026) {
+    rows.sort((a, b) => {
+      let va = a[state.sortColGala2026], vb = b[state.sortColGala2026];
+      if (['montantPromis', 'montantRecu', 'reste'].includes(state.sortColGala2026)) {
+        va = Number(va) || 0; vb = Number(vb) || 0;
+      } else {
+        va = String(va || '').toLowerCase(); vb = String(vb || '').toLowerCase();
+      }
+      if (va < vb) return -1 * state.sortDirGala2026;
+      if (va > vb) return 1 * state.sortDirGala2026;
+      return 0;
+    });
+  }
+
+  const tbody = document.getElementById('tbodyGala2026');
+  if (!tbody) return;
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td>${esc(r.nom)}</td>
+    <td>${esc(r.prenom)}</td>
+    <td class="mono">${fmtEur(r.montantPromis)}</td>
+    <td class="mono text-green">${fmtEur(r.montantRecu)}</td>
+    <td class="mono text-orange">${fmtEur(r.reste)}</td>
+    <td>${statusBadge(r.statut)}</td>
+    <td>${esc(r.sources || '')}</td>
+    <td class="text-muted">${esc(r.datesPaiement || '')}</td>
+  </tr>`).join('');
+
+  const countEl = document.getElementById('rowCountGala2026');
+  if (countEl) countEl.textContent = rows.length + ' donateur' + (rows.length > 1 ? 's' : '');
 }
 
 // ==================== PAGE: CAMPAGNE 10K ====================
@@ -1863,28 +2029,71 @@ function renderActions(container) {
 
     <div class="action-grid">
       <div class="action-card glass">
-        <h3>&#128259; Synchronisation</h3>
-        <p class="action-desc">Lancer une synchronisation compl&egrave;te des donn&eacute;es depuis toutes les sources.</p>
-        <button class="btn-action" id="btnSync" aria-label="Lancer la synchronisation">Synchroniser</button>
+        <div class="action-card-icon" style="background:var(--gradient-blue);">&#128259;</div>
+        <h3>Synchronisation</h3>
+        <p class="action-desc">Lancer le traitement complet : import HelloAsso, d&eacute;doublonnage, matching, synth&egrave;se et dashboard.</p>
+        <button class="btn-action" id="btnSync" data-label="Synchroniser" aria-label="Lancer la synchronisation">Synchroniser</button>
         <div class="action-result" id="syncResult"></div>
       </div>
 
       <div class="action-card glass">
-        <h3>&#128220; Re&ccedil;us fiscaux</h3>
-        <p class="action-desc">Statistiques de g&eacute;n&eacute;ration et d'envoi des re&ccedil;us fiscaux.</p>
-        <button class="btn-action purple" id="btnRecus" aria-label="Charger les stats des recus">Charger les stats</button>
-        <div id="recusStats"></div>
-        <div class="action-result" id="recusResult"></div>
+        <div class="action-card-icon" style="background:var(--gradient-purple);">&#128220;</div>
+        <h3>Re&ccedil;us fiscaux</h3>
+        <p class="action-desc">G&eacute;n&eacute;rer les PDF et envoyer par email les re&ccedil;us fiscaux.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-action purple" id="btnGenRecus" data-label="G&eacute;n&eacute;rer les PDF" aria-label="G&eacute;n&eacute;rer les re&ccedil;us">G&eacute;n&eacute;rer les PDF</button>
+          <button class="btn-action" id="btnEnvRecus" data-label="Envoyer par email" aria-label="Envoyer les re&ccedil;us" style="background:var(--gradient-green);">Envoyer par email</button>
+        </div>
+        <div class="action-result" id="recusGenResult"></div>
+        <div style="margin-top:12px;">
+          <label style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Renvoyer un re&ccedil;u individuel</label>
+          <div style="display:flex;gap:8px;margin-top:6px;">
+            <input type="text" id="inputRenvoiId" placeholder="ID donateur (ex: D-0042)" style="flex:1;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border-glass-strong);border-radius:var(--radius-xs);color:var(--text-primary);font-family:var(--font-main);font-size:0.85rem;outline:none;" />
+            <button class="btn-action" id="btnRenvoiRecu" data-label="Renvoyer" style="background:var(--gradient-orange);white-space:nowrap;">Renvoyer</button>
+          </div>
+          <div class="action-result" id="renvoiResult"></div>
+        </div>
       </div>
 
       <div class="action-card glass">
-        <h3>&#9881; Syst&egrave;me</h3>
-        <p class="action-desc">Informations sur la version du syst&egrave;me.</p>
-        <button class="btn-action" id="btnVersion" aria-label="Obtenir la version" style="background:var(--gradient-orange);">Version</button>
+        <div class="action-card-icon" style="background:var(--gradient-orange);">&#9881;</div>
+        <h3>Syst&egrave;me</h3>
+        <p class="action-desc">Informations sur la version du syst&egrave;me et statistiques des re&ccedil;us.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-action" id="btnVersion" data-label="Version" style="background:var(--gradient-orange);">Version</button>
+          <button class="btn-action purple" id="btnRecusStats" data-label="Stats re&ccedil;us">Stats re&ccedil;us</button>
+        </div>
+        <div id="recusStats"></div>
         <div class="action-result" id="versionResult"></div>
       </div>
     </div>
   `;
+
+  // Helper for action buttons
+  async function executeAction(btn, resultEl, action, params) {
+    const originalLabel = btn.dataset.label || btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> En cours...';
+    resultEl.className = 'action-result';
+    resultEl.style.display = 'none';
+    try {
+      const result = await apiGet(action + (params || ''));
+      resultEl.className = 'action-result show';
+      if (result.status === 'success') {
+        resultEl.style.borderLeft = '3px solid var(--green)';
+        resultEl.innerHTML = '<span style="color:var(--green);">&#9989;</span> ' + (result.message || 'OK');
+      } else {
+        resultEl.style.borderLeft = '3px solid var(--red)';
+        resultEl.innerHTML = '<span style="color:var(--red);">&#10060;</span> ' + (result.message || 'Erreur');
+      }
+    } catch (err) {
+      resultEl.className = 'action-result show';
+      resultEl.style.borderLeft = '3px solid var(--red)';
+      resultEl.innerHTML = '<span style="color:var(--red);">&#10060;</span> ' + err.message;
+    }
+    btn.disabled = false;
+    btn.innerHTML = originalLabel;
+  }
 
   // Sync
   document.getElementById('btnSync').addEventListener('click', async function() {
@@ -1892,43 +2101,62 @@ function renderActions(container) {
     const resEl = document.getElementById('syncResult');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Synchronisation...';
-    resEl.classList.add('show');
+    resEl.className = 'action-result show';
     resEl.textContent = 'En cours...';
     try {
-      const result = await apiPost({ action: 'sync' });
+      const result = await apiGet('sync');
       if (result.status === 'success' && result.data) {
         const d = result.data;
-        const fmt = n => Number(n||0).toLocaleString('fr-FR');
+        const f = n => Number(n||0).toLocaleString('fr-FR');
+        resEl.style.borderLeft = '3px solid var(--green)';
         resEl.innerHTML = `
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
             <span style="font-size:1.3rem;">&#9989;</span>
             <strong style="color:var(--green);">${result.message}</strong>
           </div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div class="sync-stat"><span class="sync-icon">&#128200;</span><span>Matches</span><strong>${fmt(d.matches)}</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#128165;</span><span>Collisions</span><strong>${fmt(d.collisions)}</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#127873;</span><span>Spontan&eacute;s</span><strong>${fmt(d.spontanes)}</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#128683;</span><span>Cotisations exclues</span><strong>${fmt(d.cotisationsExclues)}</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#128176;</span><span>Total promis</span><strong>${fmt(d.totalPromis)} &euro;</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#9989;</span><span>Total re&ccedil;u</span><strong>${fmt(d.totalRecu)} &euro;</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#128256;</span><span>Bi-campagne</span><strong>${fmt(d.biCampagne)}</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#128231;</span><span>Emails enrichis</span><strong>${fmt((d.emailsEnrichis?.paypal||0)+(d.emailsEnrichis?.helloasso||0)+(d.emailsEnrichis?.gala||0))}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128200;</span><span>Matches</span><strong>${f(d.matches)}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128165;</span><span>Collisions</span><strong>${f(d.collisions)}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#127873;</span><span>Spontan&eacute;s</span><strong>${f(d.spontanes)}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128683;</span><span>Cotisations exclues</span><strong>${f(d.cotisationsExclues)}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128176;</span><span>Total promis</span><strong>${f(d.totalPromis)} &euro;</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#9989;</span><span>Total re&ccedil;u</span><strong>${f(d.totalRecu)} &euro;</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128256;</span><span>Bi-campagne</span><strong>${f(d.biCampagne)}</strong></div>
+            <div class="sync-stat"><span class="sync-icon">&#128231;</span><span>Emails enrichis</span><strong>${f((d.emailsEnrichis?.paypal||0)+(d.emailsEnrichis?.helloasso||0)+(d.emailsEnrichis?.gala||0))}</strong></div>
           </div>`;
       } else {
+        resEl.style.borderLeft = '3px solid var(--red)';
         resEl.textContent = result.message || JSON.stringify(result, null, 2);
       }
     } catch (err) {
+      resEl.style.borderLeft = '3px solid var(--red)';
       resEl.textContent = 'Erreur : ' + err.message;
     }
     btn.disabled = false;
-    btn.textContent = 'Synchroniser';
+    btn.innerHTML = btn.dataset.label;
   });
 
-  // Recus
-  document.getElementById('btnRecus').addEventListener('click', async function() {
+  // Generer recus
+  document.getElementById('btnGenRecus').addEventListener('click', function() {
+    executeAction(this, document.getElementById('recusGenResult'), 'generer_recus');
+  });
+
+  // Envoyer recus
+  document.getElementById('btnEnvRecus').addEventListener('click', function() {
+    executeAction(this, document.getElementById('recusGenResult'), 'envoyer_recus');
+  });
+
+  // Renvoyer recu individuel
+  document.getElementById('btnRenvoiRecu').addEventListener('click', function() {
+    const id = document.getElementById('inputRenvoiId').value.trim();
+    if (!id) { document.getElementById('renvoiResult').className = 'action-result show'; document.getElementById('renvoiResult').textContent = 'Veuillez saisir un ID donateur.'; return; }
+    executeAction(this, document.getElementById('renvoiResult'), 'renvoyer_recu', '&id=' + encodeURIComponent(id));
+  });
+
+  // Stats recus
+  document.getElementById('btnRecusStats').addEventListener('click', async function() {
     const btn = this;
     const statsEl = document.getElementById('recusStats');
-    const resEl = document.getElementById('recusResult');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>Chargement...';
     try {
@@ -1943,16 +2171,12 @@ function renderActions(container) {
             <div class="stat-mini"><div class="stat-mini-value text-blue">${s.taux || 0}%</div><div class="stat-mini-label">Taux</div></div>
           </div>
         `;
-      } else {
-        resEl.classList.add('show');
-        resEl.textContent = JSON.stringify(result, null, 2);
       }
     } catch (err) {
-      resEl.classList.add('show');
-      resEl.textContent = 'Erreur : ' + err.message;
+      statsEl.innerHTML = '<p style="color:var(--red);font-size:0.85rem;">Erreur : ' + err.message + '</p>';
     }
     btn.disabled = false;
-    btn.textContent = 'Charger les stats';
+    btn.innerHTML = btn.dataset.label;
   });
 
   // Version
@@ -1963,14 +2187,20 @@ function renderActions(container) {
     btn.innerHTML = '<span class="spinner"></span>...';
     try {
       const result = await apiGet('version');
-      resEl.classList.add('show');
-      resEl.textContent = JSON.stringify(result, null, 2);
+      resEl.className = 'action-result show';
+      resEl.style.borderLeft = '3px solid var(--blue)';
+      if (result.version) {
+        resEl.innerHTML = '<strong>v' + result.version + '</strong> &mdash; ' + (result.description || '') + '<br><span style="color:var(--text-muted);font-size:0.78rem;">Build #' + (result.buildNumber || '?') + ' &bull; ' + (result.versionDate || '') + ' &bull; ' + (result.versionStatus || '') + '</span>';
+      } else {
+        resEl.textContent = JSON.stringify(result, null, 2);
+      }
     } catch (err) {
-      resEl.classList.add('show');
+      resEl.className = 'action-result show';
+      resEl.style.borderLeft = '3px solid var(--red)';
       resEl.textContent = 'Erreur : ' + err.message;
     }
     btn.disabled = false;
-    btn.textContent = 'Version';
+    btn.innerHTML = btn.dataset.label;
   });
 }
 

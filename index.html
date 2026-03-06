@@ -596,6 +596,15 @@ body {
   outline: 2px solid var(--blue); outline-offset: 2px;
 }
 .btn-action.purple { background: var(--gradient-purple); }
+.btn-maj {
+  padding: 12px 24px; border: none; border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #0075FF, #00B574); color: #fff;
+  font-family: var(--font-main); font-size: 0.95rem; font-weight: 700;
+  cursor: pointer; transition: transform var(--transition), box-shadow var(--transition);
+  white-space: nowrap;
+}
+.btn-maj:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,117,255,0.4); }
+.btn-maj:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
 .action-result {
   margin-top: 16px; padding: 16px; border-radius: var(--radius-sm);
   background: rgba(255,255,255,0.03); font-family: var(--font-main);
@@ -1102,10 +1111,14 @@ function renderOverview(container) {
   const objectifTotal = objectifClassique + objectif10K;
 
   container.innerHTML = `
-    <div class="page-header">
-      <h1>Vue d'ensemble</h1>
-      <p>Suivi global des dons - Campagnes classique et 10K</p>
+    <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
+      <div>
+        <h1>Vue d'ensemble</h1>
+        <p>Suivi global des dons - Campagnes classique et 10K</p>
+      </div>
+      ${state.role === 'admin' ? `<button class="btn-maj" id="btnMajOverview" title="Import HelloAsso + Matching + Synth&egrave;se + Re&ccedil;us fiscaux">&#128259; Mettre &agrave; jour</button>` : ''}
     </div>
+    <div class="action-result" id="majOverviewResult" style="margin-bottom:16px;"></div>
 
     <!-- Consolidated Bar -->
     <div class="consolidated-bar glass glass-strong">
@@ -1228,6 +1241,10 @@ function renderOverview(container) {
   // Render gauges
   renderGaugeSVG('gaugeClassique', pct(totalRecu, objectifClassique), 'var(--blue)');
   renderGaugeSVG('gauge10K', pct(recu10k, objectif10K), 'var(--purple)');
+
+  // Bouton Mettre à jour
+  const btnMaj = document.getElementById('btnMajOverview');
+  if (btnMaj) btnMaj.addEventListener('click', () => lancerMiseAJour(btnMaj, document.getElementById('majOverviewResult')));
 }
 
 function parseDateAny(str) {
@@ -2211,6 +2228,63 @@ function renderAlertes(container) {
 }
 
 // ==================== PAGE: ACTIONS ====================
+// ==================== MISE À JOUR GLOBALE ====================
+async function lancerMiseAJour(btn, resEl) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Mise \u00e0 jour en cours...';
+  resEl.className = 'action-result show';
+  resEl.style.borderLeft = '3px solid var(--blue)';
+  resEl.innerHTML = '<span class="spinner"></span> Import HelloAsso, matching, synth\u00e8se, re\u00e7us fiscaux\u2026 Cela peut prendre 1\u20132 min.';
+  try {
+    const result = await apiGet('traitement_complet');
+    if (result.status === 'success') {
+      const d = result.data || {};
+      const r = result.recus || {};
+      const f = n => Number(n||0).toLocaleString('fr-FR');
+      resEl.style.borderLeft = '3px solid var(--green)';
+      resEl.innerHTML = `
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <span style="font-size:1.5rem;">&#9989;</span>
+          <strong style="color:var(--green);">${result.message}</strong>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.82rem;">
+          <div class="sync-stat"><span class="sync-icon">&#128200;</span><span>Matches</span><strong>${f(d.matches)}</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#127873;</span><span>Spontan\u00e9s</span><strong>${f(d.spontanes)}</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#128176;</span><span>Total promis</span><strong>${f(d.totalPromis)} \u20AC</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#9989;</span><span>Total re\u00e7u</span><strong>${f(d.totalRecu)} \u20AC</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#128231;</span><span>Emails enrichis</span><strong>${f((d.emailsEnrichis?.paypal||0)+(d.emailsEnrichis?.helloasso||0)+(d.emailsEnrichis?.gala||0))}</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#128256;</span><span>Bi-campagne</span><strong>${f(d.biCampagne)}</strong></div>
+        </div>
+        ${r.generes > 0 || r.existants > 0 ? `
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-glass);">
+          <strong style="font-size:0.85rem;">&#128220; Re\u00e7us fiscaux</strong>
+          <div style="display:flex;gap:16px;margin-top:6px;font-size:0.82rem;">
+            <span style="color:var(--green);">${f(r.generes || 0)} g\u00e9n\u00e9r\u00e9(s)</span>
+            <span style="color:var(--text-muted);">${f(r.existants || 0)} existant(s)</span>
+            ${r.erreurs > 0 ? `<span style="color:var(--red);">${f(r.erreurs)} erreur(s)</span>` : ''}
+          </div>
+        </div>` : ''}
+      `;
+      // Refresh dashboard data
+      try {
+        const fresh = await apiGet('dashboard');
+        if (fresh.status === 'success') {
+          state.data = fresh.data || [];
+          state.campagne10K = fresh.campagne10K || null;
+        }
+      } catch(_) {}
+    } else {
+      resEl.style.borderLeft = '3px solid var(--red)';
+      resEl.innerHTML = '<span style="color:var(--red);">&#10060;</span> ' + (result.message || 'Erreur');
+    }
+  } catch (err) {
+    resEl.style.borderLeft = '3px solid var(--red)';
+    resEl.innerHTML = '<span style="color:var(--red);">&#10060;</span> ' + err.message;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '&#128259; Mettre \u00e0 jour';
+}
+
 function renderActions(container) {
   container.innerHTML = `
     <div class="page-header">
@@ -2220,11 +2294,11 @@ function renderActions(container) {
 
     <div class="action-grid">
       <div class="action-card glass">
-        <div class="action-card-icon" style="background:var(--gradient-blue);">&#128259;</div>
-        <h3>Synchronisation</h3>
-        <p class="action-desc">Lancer le traitement complet : import HelloAsso, d&eacute;doublonnage, matching, synth&egrave;se et dashboard.</p>
-        <button class="btn-action" id="btnSync" data-label="Synchroniser" aria-label="Lancer la synchronisation">Synchroniser</button>
-        <div class="action-result" id="syncResult"></div>
+        <div class="action-card-icon" style="background:linear-gradient(135deg, #0075FF, #00B574);">&#128259;</div>
+        <h3>Mise &agrave; jour compl&egrave;te</h3>
+        <p class="action-desc">Import HelloAsso + Matching + Synth&egrave;se + Dashboard + G&eacute;n&eacute;ration re&ccedil;us fiscaux (sans envoi). Un seul bouton pour tout.</p>
+        <button class="btn-maj" id="btnMajActions" style="width:100%;">&#128259; Mettre &agrave; jour</button>
+        <div class="action-result" id="majActionsResult"></div>
       </div>
 
       <div class="action-card glass">
@@ -2286,45 +2360,9 @@ function renderActions(container) {
     btn.innerHTML = originalLabel;
   }
 
-  // Sync
-  document.getElementById('btnSync').addEventListener('click', async function() {
-    const btn = this;
-    const resEl = document.getElementById('syncResult');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner"></span>Synchronisation...';
-    resEl.className = 'action-result show';
-    resEl.textContent = 'En cours...';
-    try {
-      const result = await apiGet('sync');
-      if (result.status === 'success' && result.data) {
-        const d = result.data;
-        const f = n => Number(n||0).toLocaleString('fr-FR');
-        resEl.style.borderLeft = '3px solid var(--green)';
-        resEl.innerHTML = `
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-            <span style="font-size:1.3rem;">&#9989;</span>
-            <strong style="color:var(--green);">${result.message}</strong>
-          </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <div class="sync-stat"><span class="sync-icon">&#128200;</span><span>Matches</span><strong>${f(d.matches)}</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#128165;</span><span>Collisions</span><strong>${f(d.collisions)}</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#127873;</span><span>Spontan&eacute;s</span><strong>${f(d.spontanes)}</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#128683;</span><span>Cotisations exclues</span><strong>${f(d.cotisationsExclues)}</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#128176;</span><span>Total promis</span><strong>${f(d.totalPromis)} &euro;</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#9989;</span><span>Total re&ccedil;u</span><strong>${f(d.totalRecu)} &euro;</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#128256;</span><span>Bi-campagne</span><strong>${f(d.biCampagne)}</strong></div>
-            <div class="sync-stat"><span class="sync-icon">&#128231;</span><span>Emails enrichis</span><strong>${f((d.emailsEnrichis?.paypal||0)+(d.emailsEnrichis?.helloasso||0)+(d.emailsEnrichis?.gala||0))}</strong></div>
-          </div>`;
-      } else {
-        resEl.style.borderLeft = '3px solid var(--red)';
-        resEl.textContent = result.message || JSON.stringify(result, null, 2);
-      }
-    } catch (err) {
-      resEl.style.borderLeft = '3px solid var(--red)';
-      resEl.textContent = 'Erreur : ' + err.message;
-    }
-    btn.disabled = false;
-    btn.innerHTML = btn.dataset.label;
+  // Mise à jour complète
+  document.getElementById('btnMajActions').addEventListener('click', function() {
+    lancerMiseAJour(this, document.getElementById('majActionsResult'));
   });
 
   // Generer recus

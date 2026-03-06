@@ -503,6 +503,54 @@ body {
 .btn-relance:hover { background: rgba(0,117,255,0.15); color: var(--blue-light); border-color: var(--blue); }
 .btn-relance:disabled { opacity: 0.7; cursor: not-allowed; }
 
+/* ========== EDIT MODAL ========== */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  width: 100%; max-width: 500px; max-height: 85vh; overflow-y: auto;
+  background: linear-gradient(127deg, rgba(5,11,39,0.98) 0%, rgba(15,21,53,0.95) 100%);
+  border: 1px solid var(--border-glass-strong); border-radius: var(--radius);
+  padding: 28px; position: relative;
+}
+.modal-box h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 20px; }
+.modal-close {
+  position: absolute; top: 12px; right: 16px; background: none; border: none;
+  color: var(--text-muted); font-size: 1.5rem; cursor: pointer; padding: 4px;
+}
+.modal-close:hover { color: var(--text-primary); }
+.modal-field { margin-bottom: 14px; }
+.modal-field label {
+  display: block; font-size: 0.75rem; font-weight: 500; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;
+}
+.modal-field input, .modal-field select {
+  width: 100%; padding: 10px 12px; background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border-glass-strong); border-radius: var(--radius-xs);
+  color: var(--text-primary); font-family: var(--font-main); font-size: 0.9rem; outline: none;
+}
+.modal-field input:focus, .modal-field select:focus {
+  border-color: var(--blue); box-shadow: 0 0 0 2px rgba(0,117,255,0.15);
+}
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.modal-actions button { flex: 1; padding: 10px; border: none; border-radius: var(--radius-sm); font-family: var(--font-main); font-size: 0.85rem; font-weight: 600; cursor: pointer; }
+.modal-btn-save { background: var(--gradient-blue); color: #fff; }
+.modal-btn-delete { background: var(--gradient-red); color: #fff; }
+.modal-btn-cancel { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid var(--border-glass) !important; }
+.modal-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+.modal-msg { margin-top: 10px; font-size: 0.82rem; min-height: 18px; }
+
+/* ========== ROW EDIT BUTTONS ========== */
+.btn-edit-row {
+  padding: 3px 8px; border: 1px solid var(--border-glass-strong); border-radius: 6px;
+  background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 0.78rem;
+  cursor: pointer; transition: all var(--transition);
+}
+.btn-edit-row:hover { background: rgba(0,117,255,0.15); color: var(--blue-light); border-color: var(--blue); }
+
 /* ========== ACTIONS PAGE ========== */
 .action-grid {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -812,6 +860,21 @@ body {
   <main class="main-content">
     <div id="pageContent"></div>
   </main>
+
+  <!-- Edit Modal -->
+  <div class="modal-overlay" id="editModal">
+    <div class="modal-box">
+      <button class="modal-close" id="modalClose">&times;</button>
+      <h3 id="modalTitle">Modifier</h3>
+      <div id="modalFields"></div>
+      <div class="modal-actions">
+        <button class="modal-btn-cancel" id="modalCancel">Annuler</button>
+        <button class="modal-btn-delete" id="modalDelete">Supprimer</button>
+        <button class="modal-btn-save" id="modalSave">Enregistrer</button>
+      </div>
+      <div class="modal-msg" id="modalMsg"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -867,8 +930,18 @@ async function apiGet(action) {
 
 async function apiPost(body) {
   // Apps Script ne gère pas le CORS preflight (OPTIONS) pour les POST externes.
-  // On passe par GET avec les paramètres en query string.
-  return apiGet(body.action || 'sync');
+  // On passe par GET avec les paramètres en query string pour les actions simples.
+  if (!body._forcePost) return apiGet(body.action || 'sync');
+  // Vrai POST avec token pour les actions d'écriture
+  const payload = Object.assign({}, body, { token: state.token });
+  delete payload._forcePost;
+  const r = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload),
+    redirect: 'follow',
+  });
+  return r.json();
 }
 
 // ==================== ANIMATION HELPERS ====================
@@ -937,6 +1010,7 @@ function enterApp() {
   if (state.role !== 'admin') {
     document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
   }
+  editModal.init();
   navigateTo('overview');
 }
 
@@ -1423,7 +1497,8 @@ function renderDonateursTable() {
   const tbody = document.getElementById('tbodyDonateurs');
   if (!tbody) return;
 
-  tbody.innerHTML = rows.map(r => {
+  state._gala2025Rows = rows;
+  tbody.innerHTML = rows.map((r, idx) => {
     const hasEmail = r.email && r.email.includes('@');
     const needsRelance = r.statut !== 'Complet' && r.statut !== 'Spontan\u00e9' && Number(r.reste) > 0;
     return `<tr>
@@ -1435,8 +1510,19 @@ function renderDonateursTable() {
     <td>${statusBadge(r.statut)}</td>
     <td>${esc(r.sources || '')}</td>
     <td class="text-muted">${esc(r.datesPaiement || '')}</td>
-    <td>${needsRelance && hasEmail ? `<button class="btn-relance" onclick="relancerDonateur(this,'${esc(r.email)}','${esc(r.nom)}','${esc(r.prenom)}',${Number(r.reste)||0})">&#128231;</button>` : ''}</td>
+    <td style="white-space:nowrap;">
+      ${state.role === 'admin' && r._ligne ? `<button class="btn-edit-row" data-idx="${idx}" data-table="gala2025" title="Modifier">&#9998;</button>` : ''}
+      ${needsRelance && hasEmail ? ` <button class="btn-relance" onclick="relancerDonateur(this,'${esc(r.email)}','${esc(r.nom)}','${esc(r.prenom)}',${Number(r.reste)||0})">&#128231;</button>` : ''}
+    </td>
   </tr>`}).join('');
+
+  // Edit button handlers
+  tbody.querySelectorAll('.btn-edit-row[data-table="gala2025"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const r = state._gala2025Rows[parseInt(btn.dataset.idx)];
+      openEditModal('SYNTHESE_DONATEURS', r, () => { apiGet('dashboard').then(res => { if(res.status==='success'){state.data=res.data||[];renderDonateursTable();} }); });
+    });
+  });
 
   const countEl = document.getElementById('rowCountDonateurs');
   if (countEl) countEl.textContent = rows.length + ' donateur' + (rows.length > 1 ? 's' : '');
@@ -1532,6 +1618,7 @@ function renderGala2026(container) {
             <th data-col="statut">Statut <span class="sort-arrow"></span></th>
             <th data-col="sources">Sources</th>
             <th data-col="datesPaiement">Date</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody id="tbodyGala2026"></tbody>
@@ -1638,7 +1725,8 @@ function renderGala2026Table() {
 
   const tbody = document.getElementById('tbodyGala2026');
   if (!tbody) return;
-  tbody.innerHTML = rows.map(r => `<tr>
+  state._gala2026Rows = rows;
+  tbody.innerHTML = rows.map((r, idx) => `<tr>
     <td>${esc(r.nom)}</td>
     <td>${esc(r.prenom)}</td>
     <td class="mono">${fmtEur(r.montantPromis)}</td>
@@ -1647,7 +1735,15 @@ function renderGala2026Table() {
     <td>${statusBadge(r.statut)}</td>
     <td>${esc(r.sources || '')}</td>
     <td class="text-muted">${esc(r.datesPaiement || '')}</td>
+    <td>${state.role === 'admin' && r._ligne ? `<button class="btn-edit-row" data-idx="${idx}" data-table="gala2026" title="Modifier">&#9998;</button>` : ''}</td>
   </tr>`).join('');
+
+  tbody.querySelectorAll('.btn-edit-row[data-table="gala2026"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const r = state._gala2026Rows[parseInt(btn.dataset.idx)];
+      openEditModal('SYNTHESE_GALA2', r, () => { navigateTo('gala2026'); });
+    });
+  });
 
   const countEl = document.getElementById('rowCountGala2026');
   if (countEl) countEl.textContent = rows.length + ' donateur' + (rows.length > 1 ? 's' : '');
@@ -1720,6 +1816,7 @@ function renderCampagne10K(container) {
             <th data-col10k="statutPaiement">Statut</th>
             <th data-col10k="sources">Sources</th>
             <th data-col10k="datesPaiement">Dates</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody id="tbody10K"></tbody>
@@ -1787,7 +1884,8 @@ function render10KTable() {
 
   const tbody = document.getElementById('tbody10K');
   if (!tbody) return;
-  tbody.innerHTML = rows.map(r => `<tr>
+  state._10kRows = rows;
+  tbody.innerHTML = rows.map((r, idx) => `<tr>
     <td>${esc(r.nom)}</td>
     <td>${esc(r.prenom)}</td>
     <td>${esc(r.telephone || '')}</td>
@@ -1797,7 +1895,15 @@ function render10KTable() {
     <td>${statusBadge(r.statutPaiement)}</td>
     <td>${esc(r.sources || '')}</td>
     <td class="text-muted">${esc(r.datesPaiement || '')}</td>
+    <td>${state.role === 'admin' && r._ligne ? `<button class="btn-edit-row" data-idx="${idx}" data-table="10k" title="Modifier">&#9998;</button>` : ''}</td>
   </tr>`).join('');
+
+  tbody.querySelectorAll('.btn-edit-row[data-table="10k"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const r = state._10kRows[parseInt(btn.dataset.idx)];
+      openEditModal('SYNTHESE_10K', r, () => { navigateTo('campagne10k'); });
+    });
+  });
 
   const countEl = document.getElementById('rowCount10K');
   if (countEl) countEl.textContent = rows.length + ' donateur' + (rows.length > 1 ? 's' : '');
@@ -2266,6 +2372,144 @@ function renderActions(container) {
   });
 }
 
+// ==================== EDIT MODAL ====================
+const editModal = {
+  overlay: null, fields: null, title: null, msg: null,
+  currentSheet: null, currentLigne: null, currentFields: null, onSaved: null,
+
+  init() {
+    this.overlay = document.getElementById('editModal');
+    this.fields = document.getElementById('modalFields');
+    this.title = document.getElementById('modalTitle');
+    this.msg = document.getElementById('modalMsg');
+    document.getElementById('modalClose').addEventListener('click', () => this.close());
+    document.getElementById('modalCancel').addEventListener('click', () => this.close());
+    document.getElementById('modalSave').addEventListener('click', () => this.save());
+    document.getElementById('modalDelete').addEventListener('click', () => this.remove());
+    this.overlay.addEventListener('click', (e) => { if (e.target === this.overlay) this.close(); });
+  },
+
+  open(sheetName, ligne, fieldsConfig, onSaved) {
+    // fieldsConfig: [{ label, col, value, type? }]
+    this.currentSheet = sheetName;
+    this.currentLigne = ligne;
+    this.currentFields = fieldsConfig;
+    this.onSaved = onSaved;
+    this.msg.textContent = '';
+
+    this.title.textContent = 'Modifier ligne ' + ligne;
+    this.fields.innerHTML = fieldsConfig.map((f, i) => `
+      <div class="modal-field">
+        <label>${esc(f.label)}</label>
+        ${f.type === 'select'
+          ? `<select data-col="${f.col}" id="mf_${i}">${(f.options||[]).map(o => `<option value="${esc(o)}" ${o===String(f.value)?'selected':''}>${esc(o)}</option>`).join('')}</select>`
+          : `<input type="${f.type || 'text'}" data-col="${f.col}" id="mf_${i}" value="${esc(String(f.value || ''))}" />`
+        }
+      </div>
+    `).join('');
+
+    this.overlay.classList.add('open');
+  },
+
+  close() {
+    this.overlay.classList.remove('open');
+  },
+
+  async save() {
+    const saveBtn = document.getElementById('modalSave');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Enregistrement...';
+    this.msg.textContent = '';
+
+    const champs = {};
+    this.currentFields.forEach((f, i) => {
+      const el = document.getElementById('mf_' + i);
+      if (el) champs[f.col] = el.value;
+    });
+
+    try {
+      const result = await apiPost({
+        _forcePost: true,
+        action: 'modifier_ligne',
+        sheet: this.currentSheet,
+        ligne: this.currentLigne,
+        champs: champs,
+      });
+      if (result.status === 'success') {
+        this.msg.innerHTML = '<span style="color:var(--green);">&#9989; ' + (result.message || 'Enregistr\u00e9') + '</span>';
+        if (this.onSaved) setTimeout(() => { this.close(); this.onSaved(); }, 800);
+      } else {
+        this.msg.innerHTML = '<span style="color:var(--red);">&#10060; ' + (result.message || 'Erreur') + '</span>';
+      }
+    } catch (err) {
+      this.msg.innerHTML = '<span style="color:var(--red);">&#10060; ' + err.message + '</span>';
+    }
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Enregistrer';
+  },
+
+  async remove() {
+    if (!confirm('Supprimer cette ligne ? Cette action est irr\u00e9versible.')) return;
+    const delBtn = document.getElementById('modalDelete');
+    delBtn.disabled = true;
+    delBtn.textContent = 'Suppression...';
+    this.msg.textContent = '';
+
+    try {
+      const result = await apiPost({
+        _forcePost: true,
+        action: 'supprimer_ligne',
+        sheet: this.currentSheet,
+        ligne: this.currentLigne,
+      });
+      if (result.status === 'success') {
+        this.msg.innerHTML = '<span style="color:var(--green);">&#9989; ' + (result.message || 'Supprim\u00e9') + '</span>';
+        if (this.onSaved) setTimeout(() => { this.close(); this.onSaved(); }, 800);
+      } else {
+        this.msg.innerHTML = '<span style="color:var(--red);">&#10060; ' + (result.message || 'Erreur') + '</span>';
+      }
+    } catch (err) {
+      this.msg.innerHTML = '<span style="color:var(--red);">&#10060; ' + err.message + '</span>';
+    }
+    delBtn.disabled = false;
+    delBtn.textContent = 'Supprimer';
+  }
+};
+
+// Config for editable fields per sheet
+const EDIT_FIELDS = {
+  SYNTHESE_DONATEURS: (r) => [
+    { label: 'Nom', col: 2, value: r.nom },
+    { label: 'Pr\u00e9nom', col: 3, value: r.prenom },
+    { label: 'Email', col: 5, value: r.email, type: 'email' },
+    { label: 'Montant promis', col: 6, value: r.montantPromis, type: 'number' },
+    { label: 'Montant re\u00e7u', col: 7, value: r.montantRecu, type: 'number' },
+    { label: 'Statut', col: 9, value: r.statut, type: 'select', options: ['Complet', 'Partiel', 'Non pay\u00e9', 'Spontan\u00e9'] },
+  ],
+  SYNTHESE_10K: (r) => [
+    { label: 'Nom', col: 1, value: r.nom },
+    { label: 'Pr\u00e9nom', col: 2, value: r.prenom },
+    { label: 'T\u00e9l\u00e9phone', col: 3, value: r.telephone, type: 'tel' },
+    { label: 'Contribution pr\u00e9vue', col: 5, value: r.contributionPrevue, type: 'number' },
+    { label: 'Statut paiement', col: 13, value: r.statutPaiement, type: 'select', options: ['Complet', 'Partiel', 'Non pay\u00e9'] },
+  ],
+  SYNTHESE_GALA2: (r) => [
+    { label: 'Nom', col: 2, value: r.nom },
+    { label: 'Pr\u00e9nom', col: 3, value: r.prenom },
+    { label: 'Email', col: 5, value: r.email, type: 'email' },
+    { label: 'Montant promis', col: 6, value: r.montantPromis, type: 'number' },
+    { label: 'Montant re\u00e7u', col: 7, value: r.montantRecu, type: 'number' },
+    { label: 'Statut', col: 9, value: r.statut, type: 'select', options: ['Complet', 'Partiel', 'Non pay\u00e9'] },
+  ],
+};
+
+function openEditModal(sheetName, row, onSaved) {
+  if (!row._ligne) { alert('Pas de num\u00e9ro de ligne'); return; }
+  const fieldsFn = EDIT_FIELDS[sheetName];
+  if (!fieldsFn) { alert('Feuille non configur\u00e9e'); return; }
+  editModal.open(sheetName, row._ligne, fieldsFn(row), onSaved);
+}
+
 // ==================== SKELETON LOADING ====================
 function showSkeleton(container) {
   container.innerHTML = `
@@ -2303,6 +2547,7 @@ function showSkeleton(container) {
           document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
         }
         document.querySelector('.main-content').innerHTML = '<div id="pageContent"></div>';
+        editModal.init();
         navigateTo('overview');
       } else {
         document.getElementById('appShell').style.display = 'none';

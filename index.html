@@ -494,7 +494,14 @@ body {
 .alert-card .alert-amount {
   font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; flex-shrink: 0;
 }
-.alert-card .alert-badges { display: flex; gap: 6px; flex-shrink: 0; }
+.alert-card .alert-badges { display: flex; gap: 6px; flex-shrink: 0; align-items: center; flex-wrap: wrap; }
+.btn-relance {
+  padding: 4px 10px; border: 1px solid var(--border-glass-strong); border-radius: var(--radius-xs);
+  background: rgba(255,255,255,0.04); color: var(--text-secondary); font-family: var(--font-main);
+  font-size: 0.72rem; cursor: pointer; transition: all var(--transition); white-space: nowrap;
+}
+.btn-relance:hover { background: rgba(0,117,255,0.15); color: var(--blue-light); border-color: var(--blue); }
+.btn-relance:disabled { opacity: 0.7; cursor: not-allowed; }
 
 /* ========== ACTIONS PAGE ========== */
 .action-grid {
@@ -1345,6 +1352,7 @@ function renderGala2025(container) {
             <th data-col="statut">Statut <span class="sort-arrow"></span></th>
             <th data-col="sources">Sources</th>
             <th data-col="datesPaiement">Date</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody id="tbodyDonateurs"></tbody>
@@ -1415,7 +1423,10 @@ function renderDonateursTable() {
   const tbody = document.getElementById('tbodyDonateurs');
   if (!tbody) return;
 
-  tbody.innerHTML = rows.map(r => `<tr>
+  tbody.innerHTML = rows.map(r => {
+    const hasEmail = r.email && r.email.includes('@');
+    const needsRelance = r.statut !== 'Complet' && r.statut !== 'Spontan\u00e9' && Number(r.reste) > 0;
+    return `<tr>
     <td>${esc(r.nom)}</td>
     <td>${esc(r.prenom)}</td>
     <td class="mono">${fmtEur(r.montantPromis)}</td>
@@ -1424,7 +1435,8 @@ function renderDonateursTable() {
     <td>${statusBadge(r.statut)}</td>
     <td>${esc(r.sources || '')}</td>
     <td class="text-muted">${esc(r.datesPaiement || '')}</td>
-  </tr>`).join('');
+    <td>${needsRelance && hasEmail ? `<button class="btn-relance" onclick="relancerDonateur(this,'${esc(r.email)}','${esc(r.nom)}','${esc(r.prenom)}',${Number(r.reste)||0})">&#128231;</button>` : ''}</td>
+  </tr>`}).join('');
 
   const countEl = document.getElementById('rowCountDonateurs');
   if (countEl) countEl.textContent = rows.length + ' donateur' + (rows.length > 1 ? 's' : '');
@@ -1444,6 +1456,24 @@ function esc(s) {
   const d = document.createElement('div');
   d.textContent = String(s);
   return d.innerHTML;
+}
+
+async function relancerDonateur(btn, email, nom, prenom, reste) {
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+  try {
+    const result = await apiGet('relancer_donateur&email=' + encodeURIComponent(email) + '&nom=' + encodeURIComponent(nom) + '&prenom=' + encodeURIComponent(prenom) + '&montant_reste=' + encodeURIComponent(reste));
+    if (result.status === 'success') {
+      btn.innerHTML = '&#9989;';
+      btn.style.color = 'var(--green)';
+    } else {
+      btn.innerHTML = '&#10060;';
+      btn.title = result.message || 'Erreur';
+    }
+  } catch (err) {
+    btn.innerHTML = '&#10060;';
+    btn.title = err.message;
+  }
 }
 
 function exportCSV(type) {
@@ -1951,11 +1981,10 @@ function renderAlertes(container) {
   state.data.forEach(r => {
     const reste = Number(r.reste) || 0;
     const promis = Number(r.montantPromis) || 0;
-    const recu = Number(r.montantRecu) || 0;
     if (r.statut === 'Non pay\u00e9' && promis >= 3000) {
-      critiques.push({ nom: r.nom, prenom: r.prenom, montant: promis, detail: 'Non pay\u00e9 - Promesse de ' + fmtEur(promis), campaign: 'classique' });
+      critiques.push({ nom: r.nom, prenom: r.prenom, email: r.email, montant: promis, reste: promis, detail: 'Non pay\u00e9 - Promesse de ' + fmtEur(promis), campaign: 'classique' });
     } else if ((r.statut === 'Partiel' && reste > 1000) || (r.statut === 'Non pay\u00e9' && promis >= 1000)) {
-      avertissements.push({ nom: r.nom, prenom: r.prenom, montant: reste || promis, detail: r.statut + ' - Reste ' + fmtEur(reste), campaign: 'classique' });
+      avertissements.push({ nom: r.nom, prenom: r.prenom, email: r.email, montant: reste || promis, reste: reste, detail: r.statut + ' - Reste ' + fmtEur(reste), campaign: 'classique' });
     }
   });
 
@@ -1965,9 +1994,9 @@ function renderAlertes(container) {
       const reste = Number(r.reste) || 0;
       const prevu = Number(r.contributionPrevue) || 0;
       if (r.statutPaiement === 'Non pay\u00e9' && prevu >= 3000) {
-        critiques.push({ nom: r.nom, prenom: r.prenom, montant: prevu, detail: 'Non pay\u00e9 10K - Pr\u00e9vu ' + fmtEur(prevu), campaign: '10K' });
+        critiques.push({ nom: r.nom, prenom: r.prenom, email: '', montant: prevu, reste: prevu, detail: 'Non pay\u00e9 10K - Pr\u00e9vu ' + fmtEur(prevu), campaign: '10K' });
       } else if ((r.statutPaiement === 'Partiel' && reste > 1000) || (r.statutPaiement === 'Non pay\u00e9' && prevu >= 1000)) {
-        avertissements.push({ nom: r.nom, prenom: r.prenom, montant: reste || prevu, detail: r.statutPaiement + ' 10K - Reste ' + fmtEur(reste), campaign: '10K' });
+        avertissements.push({ nom: r.nom, prenom: r.prenom, email: '', montant: reste || prevu, reste: reste, detail: r.statutPaiement + ' 10K - Reste ' + fmtEur(reste), campaign: '10K' });
       }
     });
   }
@@ -1975,7 +2004,11 @@ function renderAlertes(container) {
   critiques.sort((a, b) => b.montant - a.montant);
   avertissements.sort((a, b) => b.montant - a.montant);
 
-  const renderAlertCards = (items, iconChar) => items.map(a => `
+  let alertIdx = 0;
+  const renderAlertCards = (items, iconChar) => items.map(a => {
+    const idx = alertIdx++;
+    const hasEmail = a.email && a.email.includes('@');
+    return `
     <div class="alert-card glass">
       <span class="alert-icon">${iconChar}</span>
       <div class="alert-info">
@@ -1985,9 +2018,10 @@ function renderAlertes(container) {
       <span class="alert-amount text-red">${fmtEur(a.montant)}</span>
       <div class="alert-badges">
         <span class="badge ${a.campaign === '10K' ? 'badge-10k' : 'badge-classique'}">${a.campaign}</span>
+        ${hasEmail ? `<button class="btn-relance" data-idx="${idx}" data-email="${esc(a.email)}" data-nom="${esc(a.nom)}" data-prenom="${esc(a.prenom)}" data-reste="${a.reste}" title="Envoyer un email de relance">&#128231; Relancer</button>` : '<span class="badge badge-nonpaye" style="font-size:0.7rem;">Pas d\'email</span>'}
       </div>
     </div>
-  `).join('');
+  `}).join('');
 
   container.innerHTML = `
     <div class="page-header">
@@ -2017,6 +2051,34 @@ function renderAlertes(container) {
       </div>
     </div>
   `;
+
+  // Relance button handlers
+  container.querySelectorAll('.btn-relance').forEach(btn => {
+    btn.addEventListener('click', async function() {
+      const el = this;
+      const email = el.dataset.email;
+      const nom = el.dataset.nom;
+      const prenom = el.dataset.prenom;
+      const reste = el.dataset.reste;
+      el.disabled = true;
+      el.innerHTML = '<span class="spinner"></span>';
+      try {
+        const result = await apiGet('relancer_donateur&email=' + encodeURIComponent(email) + '&nom=' + encodeURIComponent(nom) + '&prenom=' + encodeURIComponent(prenom) + '&montant_reste=' + encodeURIComponent(reste));
+        if (result.status === 'success') {
+          el.innerHTML = '&#9989; Envoy\u00e9';
+          el.style.background = 'rgba(0,181,116,0.2)';
+          el.style.color = 'var(--green)';
+          el.style.borderColor = 'var(--green)';
+        } else {
+          el.innerHTML = '&#10060; Erreur';
+          el.style.background = 'rgba(227,26,26,0.2)';
+        }
+      } catch (err) {
+        el.innerHTML = '&#10060; Erreur';
+        el.style.background = 'rgba(227,26,26,0.2)';
+      }
+    });
+  });
 }
 
 // ==================== PAGE: ACTIONS ====================

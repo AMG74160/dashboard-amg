@@ -2413,16 +2413,19 @@ function renderActions(container) {
     const q = renvoiInput.value.trim().toLowerCase();
     renvoiIdField.value = '';
     renvoiSelectedEl.textContent = '';
+    const btnR = document.getElementById('btnRenvoiRecu');
+    btnR.disabled = false; btnR.style.opacity = '1';
     if (q.length < 2) { renvoiSugg.className = 'search-suggestions'; return; }
     const matches = state.data
       .filter(r => r.id && (`${r.nom} ${r.prenom}`.toLowerCase().includes(q) || `${r.prenom} ${r.nom}`.toLowerCase().includes(q) || (r.id||'').toLowerCase().includes(q)))
       .slice(0, 8);
     if (matches.length === 0) { renvoiSugg.className = 'search-suggestions'; return; }
     renvoiActiveIdx = -1;
+    const statutEmoji = s => s === 'Complet' ? '\uD83D\uDFE2' : s === 'Partiel' || s === 'Spontan\u00e9' ? '\uD83D\uDFE0' : '\uD83D\uDD34';
     renvoiSugg.innerHTML = matches.map((r, i) => `
-      <div class="search-suggestion" data-idx="${i}" data-id="${esc(r.id)}" data-display="${esc(r.prenom)} ${esc(r.nom)}">
-        <div class="sg-name">${esc(r.prenom)} ${esc(r.nom)}</div>
-        <div class="sg-detail">${esc(r.id)} \u2014 ${r.statut || ''} \u2014 ${fmtEur(r.montantRecu)}</div>
+      <div class="search-suggestion" data-idx="${i}" data-id="${esc(r.id)}" data-display="${esc(r.prenom)} ${esc(r.nom)}" data-statut="${esc(r.statut || '')}">
+        <div class="sg-name">${statutEmoji(r.statut)} ${esc(r.prenom)} ${esc(r.nom)}</div>
+        <div class="sg-detail">${esc(r.id)} \u2014 ${r.statut || ''} \u2014 Promis: ${fmtEur(r.montantPromis)} \u2014 Re\u00e7u: ${fmtEur(r.montantRecu)}</div>
       </div>`).join('');
     renvoiSugg.className = 'search-suggestions open';
     renvoiSugg.querySelectorAll('.search-suggestion').forEach(el => {
@@ -2445,10 +2448,25 @@ function renderActions(container) {
   }
 
   function selectRenvoiDonateur(el) {
+    const statut = el.dataset.statut;
+    const btnRenvoi = document.getElementById('btnRenvoiRecu');
     renvoiIdField.value = el.dataset.id;
     renvoiInput.value = el.dataset.display;
-    renvoiSelectedEl.innerHTML = '\u2705 <strong>' + esc(el.dataset.display) + '</strong> \u2014 ' + esc(el.dataset.id);
     renvoiSugg.className = 'search-suggestions';
+
+    if (statut === 'Non pay\u00e9') {
+      renvoiSelectedEl.innerHTML = '\uD83D\uDD34 <strong>' + esc(el.dataset.display) + '</strong> \u2014 Non pay\u00e9 \u2014 <span style="color:var(--red);">Impossible de g\u00e9n\u00e9rer un re\u00e7u</span>';
+      btnRenvoi.disabled = true;
+      btnRenvoi.style.opacity = '0.4';
+    } else if (statut === 'Partiel' || statut === 'Spontan\u00e9') {
+      renvoiSelectedEl.innerHTML = '\uD83D\uDFE0 <strong>' + esc(el.dataset.display) + '</strong> \u2014 ' + esc(statut) + ' \u2014 <span style="color:var(--orange);">Re\u00e7u sur montant re\u00e7u uniquement</span>';
+      btnRenvoi.disabled = false;
+      btnRenvoi.style.opacity = '1';
+    } else {
+      renvoiSelectedEl.innerHTML = '\uD83D\uDFE2 <strong>' + esc(el.dataset.display) + '</strong> \u2014 Complet \u2014 <span style="color:var(--green);">Re\u00e7u pr\u00eat \u00e0 envoyer</span>';
+      btnRenvoi.disabled = false;
+      btnRenvoi.style.opacity = '1';
+    }
   }
 
   document.addEventListener('click', (e) => {

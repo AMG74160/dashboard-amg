@@ -2358,6 +2358,17 @@ function renderActions(container) {
         <div id="recusStats"></div>
         <div class="action-result" id="versionResult"></div>
       </div>
+
+      <div class="action-card glass">
+        <div class="action-card-icon" style="background:linear-gradient(135deg,#0075FF,#00B574);">&#9200;</div>
+        <h3>Synchro automatique</h3>
+        <p class="action-desc">Mise &agrave; jour automatique toutes les 4h : import HelloAsso + matching + synth&egrave;se + re&ccedil;us fiscaux.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-action" id="btnSynchroOn" data-label="Activer (4h)" style="background:linear-gradient(135deg,#0075FF,#00B574);">&#9200; Activer (4h)</button>
+          <button class="btn-action" id="btnSynchroOff" data-label="D&eacute;sactiver" style="background:linear-gradient(135deg,#f87171,#dc2626);">&#9209; D&eacute;sactiver</button>
+        </div>
+        <div class="action-result" id="synchroResult"></div>
+      </div>
     </div>
   `;
 
@@ -2527,6 +2538,18 @@ function renderActions(container) {
     }
     btn.disabled = false;
     btn.innerHTML = btn.dataset.label;
+  });
+
+  // Synchro auto ON
+  document.getElementById('btnSynchroOn').addEventListener('click', async function() {
+    const btn = this, resEl = document.getElementById('synchroResult');
+    await executeAction(btn, resEl, 'synchro_auto_on');
+  });
+
+  // Synchro auto OFF
+  document.getElementById('btnSynchroOff').addEventListener('click', async function() {
+    const btn = this, resEl = document.getElementById('synchroResult');
+    await executeAction(btn, resEl, 'synchro_auto_off');
   });
 }
 

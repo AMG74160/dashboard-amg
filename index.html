@@ -605,6 +605,20 @@ body {
 }
 .btn-maj:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,117,255,0.4); }
 .btn-maj:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.search-suggestions {
+  display: none; position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+  background: rgba(10,15,40,0.97); border: 1px solid var(--border-glass-strong);
+  border-radius: var(--radius-xs); margin-top: 4px; max-height: 220px; overflow-y: auto;
+  backdrop-filter: blur(12px);
+}
+.search-suggestions.open { display: block; }
+.search-suggestion {
+  padding: 10px 14px; cursor: pointer; font-size: 0.85rem;
+  border-bottom: 1px solid rgba(255,255,255,0.04); transition: background 0.15s;
+}
+.search-suggestion:hover, .search-suggestion.active { background: rgba(0,117,255,0.15); }
+.search-suggestion .sg-name { color: var(--text-primary); font-weight: 600; }
+.search-suggestion .sg-detail { color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
 .action-result {
   margin-top: 16px; padding: 16px; border-radius: var(--radius-sm);
   background: rgba(255,255,255,0.03); font-family: var(--font-main);
@@ -2310,12 +2324,18 @@ function renderActions(container) {
           <button class="btn-action" id="btnEnvRecus" data-label="Envoyer par email" aria-label="Envoyer les re&ccedil;us" style="background:var(--gradient-green);">Envoyer par email</button>
         </div>
         <div class="action-result" id="recusGenResult"></div>
-        <div style="margin-top:12px;">
+        <div style="margin-top:16px;position:relative;">
           <label style="font-size:0.78rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Renvoyer un re&ccedil;u individuel</label>
-          <div style="display:flex;gap:8px;margin-top:6px;">
-            <input type="text" id="inputRenvoiId" placeholder="ID donateur (ex: D-0042)" style="flex:1;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border-glass-strong);border-radius:var(--radius-xs);color:var(--text-primary);font-family:var(--font-main);font-size:0.85rem;outline:none;" />
+          <div style="display:flex;gap:8px;margin-top:6px;position:relative;">
+            <div style="flex:1;position:relative;">
+              <input type="text" id="inputRenvoiNom" placeholder="Rechercher un donateur..." autocomplete="off"
+                style="width:100%;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border-glass-strong);border-radius:var(--radius-xs);color:var(--text-primary);font-family:var(--font-main);font-size:0.85rem;outline:none;" />
+              <input type="hidden" id="inputRenvoiId" />
+              <div id="renvoiSuggestions" class="search-suggestions"></div>
+            </div>
             <button class="btn-action" id="btnRenvoiRecu" data-label="Renvoyer" style="background:var(--gradient-orange);white-space:nowrap;">Renvoyer</button>
           </div>
+          <div id="renvoiSelected" style="margin-top:6px;font-size:0.82rem;color:var(--text-muted);min-height:20px;"></div>
           <div class="action-result" id="renvoiResult"></div>
         </div>
       </div>
@@ -2375,10 +2395,62 @@ function renderActions(container) {
     executeAction(this, document.getElementById('recusGenResult'), 'envoyer_recus');
   });
 
-  // Renvoyer recu individuel
+  // Renvoyer recu individuel — recherche par nom
+  const renvoiInput = document.getElementById('inputRenvoiNom');
+  const renvoiSugg = document.getElementById('renvoiSuggestions');
+  const renvoiIdField = document.getElementById('inputRenvoiId');
+  const renvoiSelectedEl = document.getElementById('renvoiSelected');
+  let renvoiActiveIdx = -1;
+
+  renvoiInput.addEventListener('input', () => {
+    const q = renvoiInput.value.trim().toLowerCase();
+    renvoiIdField.value = '';
+    renvoiSelectedEl.textContent = '';
+    if (q.length < 2) { renvoiSugg.className = 'search-suggestions'; return; }
+    const matches = state.data
+      .filter(r => r.id && (`${r.nom} ${r.prenom}`.toLowerCase().includes(q) || `${r.prenom} ${r.nom}`.toLowerCase().includes(q) || (r.id||'').toLowerCase().includes(q)))
+      .slice(0, 8);
+    if (matches.length === 0) { renvoiSugg.className = 'search-suggestions'; return; }
+    renvoiActiveIdx = -1;
+    renvoiSugg.innerHTML = matches.map((r, i) => `
+      <div class="search-suggestion" data-idx="${i}" data-id="${esc(r.id)}" data-display="${esc(r.prenom)} ${esc(r.nom)}">
+        <div class="sg-name">${esc(r.prenom)} ${esc(r.nom)}</div>
+        <div class="sg-detail">${esc(r.id)} \u2014 ${r.statut || ''} \u2014 ${fmtEur(r.montantRecu)}</div>
+      </div>`).join('');
+    renvoiSugg.className = 'search-suggestions open';
+    renvoiSugg.querySelectorAll('.search-suggestion').forEach(el => {
+      el.addEventListener('click', () => selectRenvoiDonateur(el));
+    });
+  });
+
+  renvoiInput.addEventListener('keydown', (e) => {
+    const items = renvoiSugg.querySelectorAll('.search-suggestion');
+    if (!items.length) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); renvoiActiveIdx = Math.min(renvoiActiveIdx + 1, items.length - 1); updateRenvoiActive(items); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); renvoiActiveIdx = Math.max(renvoiActiveIdx - 1, 0); updateRenvoiActive(items); }
+    else if (e.key === 'Enter' && renvoiActiveIdx >= 0) { e.preventDefault(); selectRenvoiDonateur(items[renvoiActiveIdx]); }
+    else if (e.key === 'Escape') { renvoiSugg.className = 'search-suggestions'; }
+  });
+
+  function updateRenvoiActive(items) {
+    items.forEach((el, i) => el.classList.toggle('active', i === renvoiActiveIdx));
+    if (renvoiActiveIdx >= 0) items[renvoiActiveIdx].scrollIntoView({ block: 'nearest' });
+  }
+
+  function selectRenvoiDonateur(el) {
+    renvoiIdField.value = el.dataset.id;
+    renvoiInput.value = el.dataset.display;
+    renvoiSelectedEl.innerHTML = '\u2705 <strong>' + esc(el.dataset.display) + '</strong> \u2014 ' + esc(el.dataset.id);
+    renvoiSugg.className = 'search-suggestions';
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#renvoiSuggestions') && e.target !== renvoiInput) renvoiSugg.className = 'search-suggestions';
+  });
+
   document.getElementById('btnRenvoiRecu').addEventListener('click', function() {
-    const id = document.getElementById('inputRenvoiId').value.trim();
-    if (!id) { document.getElementById('renvoiResult').className = 'action-result show'; document.getElementById('renvoiResult').textContent = 'Veuillez saisir un ID donateur.'; return; }
+    const id = renvoiIdField.value.trim();
+    if (!id) { document.getElementById('renvoiResult').className = 'action-result show'; document.getElementById('renvoiResult').textContent = 'S\u00e9lectionnez un donateur dans la liste.'; return; }
     executeAction(this, document.getElementById('renvoiResult'), 'renvoyer_recu', '&id=' + encodeURIComponent(id));
   });
 

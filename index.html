@@ -1230,14 +1230,29 @@ function computeMonthlyData(data, c10k) {
   const monthlyClassique = {};
   const monthly10K = {};
 
+  // Parse date:montant pairs (e.g. "06/10/2025:150, 31/10/2025:550")
+  function parseDateParts(datesPaiement, montantRecu) {
+    const parts = String(datesPaiement).split(',').map(s => s.trim()).filter(Boolean);
+    const hasAmounts = parts.some(p => p.includes(':'));
+    return parts.map(dp => {
+      const colonIdx = dp.lastIndexOf(':');
+      let dateStr, amt;
+      if (hasAmounts && colonIdx > 0) {
+        dateStr = dp.substring(0, colonIdx).trim();
+        amt = parseFloat(dp.substring(colonIdx + 1)) || 0;
+      } else {
+        dateStr = dp.trim();
+        amt = parts.length > 0 ? (Number(montantRecu) || 0) / parts.length : 0;
+      }
+      return { dateStr, amt };
+    });
+  }
+
   // Parse dates from classique
   data.forEach(r => {
     if (!r.datesPaiement) return;
-    const parts = String(r.datesPaiement).split(',');
-    const nb = parts.length;
-    const amt = nb > 0 ? (Number(r.montantRecu) || 0) / nb : 0;
-    parts.forEach(dp => {
-      const date = parseDateAny(dp);
+    parseDateParts(r.datesPaiement, r.montantRecu).forEach(({ dateStr, amt }) => {
+      const date = parseDateAny(dateStr);
       if (date) {
         const key = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
         monthlyClassique[key] = (monthlyClassique[key] || 0) + amt;
@@ -1249,11 +1264,8 @@ function computeMonthlyData(data, c10k) {
   if (c10k && c10k.data) {
     c10k.data.forEach(r => {
       if (!r.datesPaiement) return;
-      const parts = String(r.datesPaiement).split(',');
-      const nb = parts.length;
-      const amt = nb > 0 ? (Number(r.montantRecu) || 0) / nb : 0;
-      parts.forEach(dp => {
-        const date = parseDateAny(dp);
+      parseDateParts(r.datesPaiement, r.montantRecu).forEach(({ dateStr, amt }) => {
+        const date = parseDateAny(dateStr);
         if (date) {
           const key = date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0');
           monthly10K[key] = (monthly10K[key] || 0) + amt;

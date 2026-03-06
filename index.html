@@ -944,7 +944,7 @@ function renderOverview(container) {
         <h3>Campagne 10K</h3>
         <svg class="gauge-svg gauge-svg-lg" viewBox="0 0 200 110" id="gauge10K"></svg>
         <div class="gauge-value text-purple" data-counter="${recu10k}" data-suffix=" \u20AC"></div>
-        <div class="gauge-label">Intention : ${fmtEur(objectif10K)}</div>
+        <div class="gauge-label">Campagne 10K</div>
         ${c10k ? `<div class="gauge-badges">
           <span class="badge badge-complet badge-count">${c10k.kpis.nbComplet || 0} complets</span>
           <span class="badge badge-partiel badge-count">${c10k.kpis.nbPartiel || 0} partiels</span>
@@ -966,11 +966,6 @@ function renderOverview(container) {
         <div class="kpi-label">Taux de recouvrement</div>
         <div class="kpi-value" data-counter="${tauxRecouvrement}" data-suffix=" %"></div>
         <div id="gaugeRecouvrementMini"></div>
-      </div>
-      <div class="kpi-card glass">
-        <div class="kpi-icon">&#128179;</div>
-        <div class="kpi-label">Total ch&egrave;ques</div>
-        <div class="kpi-value" data-counter="${state.totalCheques}" data-suffix=" \u20AC"></div>
       </div>
       <div class="kpi-card glass">
         <div class="kpi-icon">&#128256;</div>

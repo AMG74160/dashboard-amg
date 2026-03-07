@@ -600,7 +600,7 @@ document.getElementById('btnConfirm').addEventListener('click', async function()
       document.getElementById('formRecu').reset();
       document.getElementById('btnBack').style.display = 'none';
       btn.style.display = 'none';
-      document.getElementById('verifyData').innerHTML = '<p style="text-align:center;color:var(--green);font-size:1.1rem;padding:10px 0;">Merci pour votre demande !</p>';
+      document.getElementById('verifyData').innerHTML = '<p style="text-align:center;color:var(--green);font-size:1.1rem;padding:10px 0;">Merci ' + f.prenom + ' pour votre demande !</p>';
     } else {
       resEl.className = 'result error';
       resEl.textContent = result.message || 'Une erreur est survenue.';

@@ -290,7 +290,20 @@
     </div>
 
     <div class="form-card">
-      <h2>Remarque</h2>
+      <h2>Informations complémentaires</h2>
+      <div class="field">
+        <label>Mode de paiement (optionnel)</label>
+        <select id="modePaiement" name="modePaiement">
+          <option value="">— Non précisé —</option>
+          <option value="CB">Carte bancaire (CB)</option>
+          <option value="Virement">Virement bancaire</option>
+          <option value="Espèces">Espèces</option>
+          <option value="Chèque">Chèque</option>
+          <option value="HelloAsso">HelloAsso</option>
+          <option value="PayPal">PayPal</option>
+          <option value="Autre">Autre</option>
+        </select>
+      </div>
       <div class="field">
         <label>Remarque (optionnel)</label>
         <textarea id="remarque" name="remarque" placeholder="Précision sur votre don, numéro de reçu si renvoi..."></textarea>
@@ -404,6 +417,7 @@ function getFormFields() {
     adresse: (fd.get('adresse')||'').trim(),
     codePostal: (fd.get('codePostal')||'').trim(),
     ville: (fd.get('ville')||'').trim(),
+    modePaiement: (fd.get('modePaiement')||'').trim(),
     remarque: (fd.get('remarque')||'').trim(),
   };
 }
@@ -429,6 +443,9 @@ document.getElementById('btnVerify').addEventListener('click', function() {
   let html = '';
   for (const [k, label] of labels) {
     html += '<div class="verify-row"><span class="verify-label">' + label + '</span><span class="verify-value">' + f[k].replace(/</g,'&lt;') + '</span></div>';
+  }
+  if (f.modePaiement) {
+    html += '<div class="verify-row"><span class="verify-label">Mode de paiement</span><span class="verify-value">' + f.modePaiement.replace(/</g,'&lt;') + '</span></div>';
   }
   if (f.remarque) {
     html += '<div class="verify-row"><span class="verify-label">Remarque</span><span class="verify-value">' + f.remarque.replace(/</g,'&lt;') + '</span></div>';
@@ -462,7 +479,7 @@ document.getElementById('btnConfirm').addEventListener('click', async function()
   resEl.removeAttribute('style');
 
   const f = getFormFields();
-  const data = { ...f, modePaiement: 'Virement bancaire' };
+  const data = { ...f, modePaiement: f.modePaiement || '' };
 
   try {
     const url = API_URL + '?action=demande_recu&' + new URLSearchParams(data).toString();

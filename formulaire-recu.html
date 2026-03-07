@@ -257,24 +257,24 @@
         <div class="hint">Adresse à laquelle vous recevrez votre reçu fiscal</div>
       </div>
       <div class="field">
-        <label>Téléphone</label>
-        <input type="tel" id="telephone" placeholder="06 12 34 56 78" autocomplete="tel">
-        <div class="hint">Pour recevoir le reçu aussi par WhatsApp (optionnel)</div>
+        <label>Téléphone <span class="req">*</span></label>
+        <input type="tel" id="telephone" required placeholder="06 12 34 56 78" autocomplete="tel">
+        <div class="hint">Pour recevoir le reçu aussi par WhatsApp</div>
       </div>
       <div class="field" style="position:relative;">
-        <label>Adresse postale</label>
-        <input type="text" id="adresse" placeholder="Commencez à taper votre adresse..." autocomplete="off">
+        <label>Adresse postale <span class="req">*</span></label>
+        <input type="text" id="adresse" required placeholder="Commencez à taper votre adresse..." autocomplete="off">
         <div id="adresseSuggestions" class="addr-suggestions"></div>
         <div class="hint">Autocomplétion pour la France. Adresse étrangère : saisissez manuellement.</div>
       </div>
       <div class="field-row">
         <div class="field">
-          <label>Code postal</label>
-          <input type="text" id="codePostal" placeholder="74160" autocomplete="postal-code">
+          <label>Code postal <span class="req">*</span></label>
+          <input type="text" id="codePostal" required placeholder="74160" autocomplete="postal-code">
         </div>
         <div class="field">
-          <label>Ville</label>
-          <input type="text" id="ville" placeholder="Saint-Julien-en-Genevois" autocomplete="address-level2">
+          <label>Ville <span class="req">*</span></label>
+          <input type="text" id="ville" required placeholder="Saint-Julien-en-Genevois" autocomplete="address-level2">
         </div>
       </div>
     </div>
@@ -367,7 +367,12 @@ document.getElementById('formRecu').addEventListener('submit', async function(e)
   const prenom = document.getElementById('prenom').value.trim();
   const nom = document.getElementById('nom').value.trim();
   const email = document.getElementById('email').value.trim();
-  if (!prenom || !nom || !email) {
+  const telephone = document.getElementById('telephone').value.trim();
+  const adresse = document.getElementById('adresse').value.trim();
+  const codePostal = document.getElementById('codePostal').value.trim();
+  const ville = document.getElementById('ville').value.trim();
+
+  if (!prenom || !nom || !email || !telephone || !adresse || !codePostal || !ville) {
     resEl.className = 'result error';
     resEl.textContent = 'Veuillez remplir tous les champs obligatoires (*)';
     return;

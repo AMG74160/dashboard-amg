@@ -626,6 +626,32 @@ body {
   overflow-y: auto; display: none; word-break: break-word;
 }
 .action-result.show { display: block; }
+
+/* Toggle switch */
+.toggle-row { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+.toggle-label { font-size: 0.85rem; color: var(--text-muted); }
+.toggle-label.active { color: var(--green); font-weight: 600; }
+.toggle-label.inactive { color: var(--text-muted); }
+.toggle-switch { position: relative; width: 52px; height: 28px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; cursor: pointer;
+  background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 28px; transition: all 0.3s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute; left: 3px; top: 3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #718096; transition: all 0.3s;
+}
+.toggle-switch input:checked + .toggle-slider {
+  background: rgba(0,181,116,0.2); border-color: var(--green);
+}
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(24px); background: var(--green);
+  box-shadow: 0 0 8px rgba(0,181,116,0.5);
+}
+.toggle-switch input:disabled + .toggle-slider { opacity: 0.5; cursor: wait; }
 .sync-stat {
   display: flex; align-items: center; gap: 8px; padding: 10px 12px;
   background: rgba(255,255,255,0.04); border-radius: var(--radius-xs);
@@ -2363,9 +2389,12 @@ function renderActions(container) {
         <div class="action-card-icon" style="background:linear-gradient(135deg,#0075FF,#00B574);">&#9200;</div>
         <h3>Synchro automatique</h3>
         <p class="action-desc">Mise &agrave; jour automatique toutes les 4h : import HelloAsso + matching + synth&egrave;se + re&ccedil;us fiscaux.</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="btn-action" id="btnSynchroOn" data-label="Activer (4h)" style="background:linear-gradient(135deg,#0075FF,#00B574);">&#9200; Activer (4h)</button>
-          <button class="btn-action" id="btnSynchroOff" data-label="D&eacute;sactiver" style="background:linear-gradient(135deg,#f87171,#dc2626);">&#9209; D&eacute;sactiver</button>
+        <div class="toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="toggleSynchro" />
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label" id="synchroStatusLabel">Chargement...</span>
         </div>
         <div class="action-result" id="synchroResult"></div>
       </div>
@@ -2540,16 +2569,51 @@ function renderActions(container) {
     btn.innerHTML = btn.dataset.label;
   });
 
-  // Synchro auto ON
-  document.getElementById('btnSynchroOn').addEventListener('click', async function() {
-    const btn = this, resEl = document.getElementById('synchroResult');
-    await executeAction(btn, resEl, 'synchro_auto_on');
-  });
+  // Synchro auto toggle
+  const toggleSynchro = document.getElementById('toggleSynchro');
+  const synchroLabel = document.getElementById('synchroStatusLabel');
+  const synchroResult = document.getElementById('synchroResult');
 
-  // Synchro auto OFF
-  document.getElementById('btnSynchroOff').addEventListener('click', async function() {
-    const btn = this, resEl = document.getElementById('synchroResult');
-    await executeAction(btn, resEl, 'synchro_auto_off');
+  function updateSynchroUI(actif) {
+    toggleSynchro.checked = actif;
+    synchroLabel.textContent = actif ? 'Active \u2014 toutes les 4h' : 'D\u00e9sactiv\u00e9e';
+    synchroLabel.className = 'toggle-label ' + (actif ? 'active' : 'inactive');
+  }
+
+  // Charger l'\u00e9tat initial
+  (async () => {
+    try {
+      const r = await apiGet('synchro_auto_status');
+      if (r.status === 'success') updateSynchroUI(r.actif);
+      else synchroLabel.textContent = 'Statut inconnu';
+    } catch { synchroLabel.textContent = 'Erreur de chargement'; }
+  })();
+
+  toggleSynchro.addEventListener('change', async function() {
+    const activer = this.checked;
+    this.disabled = true;
+    synchroLabel.textContent = activer ? 'Activation...' : 'D\u00e9sactivation...';
+    synchroLabel.className = 'toggle-label inactive';
+    try {
+      const r = await apiGet(activer ? 'synchro_auto_on' : 'synchro_auto_off');
+      if (r.status === 'success') {
+        updateSynchroUI(activer);
+        synchroResult.className = 'action-result show';
+        synchroResult.style.borderLeft = '3px solid var(--green)';
+        synchroResult.innerHTML = '\u2705 ' + r.message;
+      } else {
+        updateSynchroUI(!activer);
+        synchroResult.className = 'action-result show';
+        synchroResult.style.borderLeft = '3px solid var(--red)';
+        synchroResult.innerHTML = '\u274C ' + (r.message || 'Erreur');
+      }
+    } catch (err) {
+      updateSynchroUI(!activer);
+      synchroResult.className = 'action-result show';
+      synchroResult.style.borderLeft = '3px solid var(--red)';
+      synchroResult.innerHTML = '\u274C ' + err.message;
+    }
+    this.disabled = false;
   });
 }
 

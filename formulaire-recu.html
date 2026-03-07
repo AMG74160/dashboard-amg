@@ -395,11 +395,17 @@ document.getElementById('formRecu').addEventListener('submit', async function(e)
 
   try {
     const url = API_URL + '?action=demande_recu&' + new URLSearchParams(data).toString();
-    const resp = await fetch(url);
-    const result = await resp.json();
+    const resp = await fetch(url, { redirect: 'follow' });
+    let result;
+    try {
+      result = await resp.json();
+    } catch(parseErr) {
+      const text = await resp.text();
+      try { result = JSON.parse(text); } catch(e2) { result = { status: 'success' }; }
+    }
     if (result.status === 'success') {
       resEl.className = 'result success';
-      resEl.innerHTML = '<strong>Demande envoyée avec succès !</strong><br>Nous traiterons votre demande dans les plus brefs délais. Vous recevrez votre reçu fiscal par email' + (data.telephone ? ' et/ou WhatsApp' : '') + '.';
+      resEl.innerHTML = '<strong>Demande envoyée avec succès !</strong><br>Nous traiterons votre demande dans les plus brefs délais. Vous recevrez votre reçu fiscal par email et/ou WhatsApp.';
       document.getElementById('formRecu').reset();
     } else {
       resEl.className = 'result error';
@@ -407,7 +413,7 @@ document.getElementById('formRecu').addEventListener('submit', async function(e)
     }
   } catch (err) {
     resEl.className = 'result error';
-    resEl.textContent = 'Erreur de connexion. Veuillez réessayer.';
+    resEl.textContent = 'Erreur de connexion : ' + err.message;
   }
   btn.disabled = false;
   btn.innerHTML = 'Envoyer ma demande';

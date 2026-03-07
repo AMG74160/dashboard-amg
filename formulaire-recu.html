@@ -210,6 +210,16 @@
   }
   .addr-item .addr-main { color: var(--text); }
   .addr-item .addr-ctx { color: var(--text-muted); font-size: 0.75rem; margin-top: 2px; }
+  .verify-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .verify-row:last-child { border-bottom: none; }
+  .verify-label { color: var(--text-muted); }
+  .verify-value { color: var(--text); font-weight: 500; text-align: right; max-width: 60%; word-break: break-word; }
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
@@ -287,9 +297,23 @@
       </div>
     </div>
 
-    <button type="submit" class="btn-submit" id="btnSubmit">Envoyer ma demande</button>
+    <button type="button" class="btn-submit" id="btnVerify">Vérifier mes informations</button>
     <div class="result" id="result"></div>
   </form>
+
+  <!-- Page de vérification -->
+  <div id="verifyPage" style="display:none;">
+    <div class="form-card" style="border-color:rgba(0,117,255,0.3);">
+      <h2>Vérification de vos informations</h2>
+      <p style="color:var(--text-muted);font-size:0.82rem;margin-bottom:16px;">Veuillez vérifier que toutes les informations ci-dessous sont correctes avant de valider.</p>
+      <div id="verifyData"></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button type="button" class="btn-submit" id="btnBack" style="background:rgba(255,255,255,0.08);flex:1;">Corriger</button>
+      <button type="button" class="btn-submit" id="btnConfirm" style="flex:2;">Confirmer et envoyer</button>
+    </div>
+    <div class="result" id="resultConfirm"></div>
+  </div>
 
   <div class="footer">
     Association Musulmane du Genevois<br>
@@ -359,24 +383,59 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyABLbrLkgZyLoUm4A68FPZ
   });
 })();
 
-document.getElementById('formRecu').addEventListener('submit', async function(e) {
-  e.preventDefault();
-  const btn = document.getElementById('btnSubmit');
+// Étape 1 : Vérifier les informations
+document.getElementById('btnVerify').addEventListener('click', function() {
   const resEl = document.getElementById('result');
+  const fields = {
+    prenom: document.getElementById('prenom').value.trim(),
+    nom: document.getElementById('nom').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    telephone: document.getElementById('telephone').value.trim(),
+    adresse: document.getElementById('adresse').value.trim(),
+    codePostal: document.getElementById('codePostal').value.trim(),
+    ville: document.getElementById('ville').value.trim(),
+  };
 
-  const prenom = document.getElementById('prenom').value.trim();
-  const nom = document.getElementById('nom').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const telephone = document.getElementById('telephone').value.trim();
-  const adresse = document.getElementById('adresse').value.trim();
-  const codePostal = document.getElementById('codePostal').value.trim();
-  const ville = document.getElementById('ville').value.trim();
-
-  if (!prenom || !nom || !email || !telephone || !adresse || !codePostal || !ville) {
+  if (!fields.prenom || !fields.nom || !fields.email || !fields.telephone || !fields.adresse || !fields.codePostal || !fields.ville) {
     resEl.className = 'result error';
     resEl.textContent = 'Veuillez remplir tous les champs obligatoires (*)';
     return;
   }
+
+  resEl.className = 'result';
+  resEl.removeAttribute('style');
+
+  const labels = { prenom:'Prénom', nom:'Nom', email:'Email', telephone:'Téléphone', adresse:'Adresse', codePostal:'Code postal', ville:'Ville' };
+  const remarque = document.getElementById('remarque').value.trim();
+
+  let html = '';
+  for (const [k, v] of Object.entries(fields)) {
+    html += '<div class="verify-row"><span class="verify-label">' + labels[k] + '</span><span class="verify-value">' + v.replace(/</g,'&lt;') + '</span></div>';
+  }
+  if (remarque) {
+    html += '<div class="verify-row"><span class="verify-label">Remarque</span><span class="verify-value">' + remarque.replace(/</g,'&lt;') + '</span></div>';
+  }
+
+  document.getElementById('verifyData').innerHTML = html;
+  document.getElementById('formRecu').style.display = 'none';
+  document.querySelector('.info-box').style.display = 'none';
+  document.getElementById('verifyPage').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Étape 2a : Retour au formulaire pour corriger
+document.getElementById('btnBack').addEventListener('click', function() {
+  document.getElementById('verifyPage').style.display = 'none';
+  document.getElementById('resultConfirm').className = 'result';
+  document.getElementById('formRecu').style.display = 'block';
+  document.querySelector('.info-box').style.display = 'block';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+// Étape 2b : Confirmer et envoyer
+document.getElementById('btnConfirm').addEventListener('click', async function() {
+  const btn = document.getElementById('btnConfirm');
+  const resEl = document.getElementById('resultConfirm');
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Envoi en cours...';
@@ -384,7 +443,9 @@ document.getElementById('formRecu').addEventListener('submit', async function(e)
   resEl.removeAttribute('style');
 
   const data = {
-    prenom, nom, email,
+    prenom: document.getElementById('prenom').value.trim(),
+    nom: document.getElementById('nom').value.trim(),
+    email: document.getElementById('email').value.trim(),
     telephone: document.getElementById('telephone').value.trim(),
     adresse: document.getElementById('adresse').value.trim(),
     codePostal: document.getElementById('codePostal').value.trim(),
@@ -405,8 +466,11 @@ document.getElementById('formRecu').addEventListener('submit', async function(e)
     }
     if (result.status === 'success') {
       resEl.className = 'result success';
-      resEl.innerHTML = '<strong>Demande envoyée avec succès !</strong><br>Nous traiterons votre demande dans les plus brefs délais. Vous recevrez votre reçu fiscal par email et/ou WhatsApp.';
+      resEl.innerHTML = '<strong>Demande envoyée avec succès !</strong><br>Nous traiterons votre demande dans les plus brefs délais.<br>Vous recevrez votre reçu fiscal par email et/ou WhatsApp.';
       document.getElementById('formRecu').reset();
+      document.getElementById('btnBack').style.display = 'none';
+      btn.style.display = 'none';
+      document.getElementById('verifyData').innerHTML = '<p style="text-align:center;color:var(--green);font-size:1.1rem;padding:10px 0;">Merci pour votre demande !</p>';
     } else {
       resEl.className = 'result error';
       resEl.textContent = result.message || 'Une erreur est survenue.';
@@ -416,7 +480,7 @@ document.getElementById('formRecu').addEventListener('submit', async function(e)
     resEl.textContent = 'Erreur de connexion : ' + err.message;
   }
   btn.disabled = false;
-  btn.innerHTML = 'Envoyer ma demande';
+  btn.innerHTML = 'Confirmer et envoyer';
 });
 </script>
 </body>

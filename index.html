@@ -2354,10 +2354,11 @@ function renderActions(container) {
       <div class="action-card glass">
         <div class="action-card-icon" style="background:var(--gradient-purple);">&#128220;</div>
         <h3>Re&ccedil;us fiscaux</h3>
-        <p class="action-desc">G&eacute;n&eacute;rer les PDF et envoyer par email les re&ccedil;us fiscaux.</p>
+        <p class="action-desc">G&eacute;n&eacute;rer les PDF et envoyer les re&ccedil;us fiscaux par email ou WhatsApp.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn-action purple" id="btnGenRecus" data-label="G&eacute;n&eacute;rer les PDF" aria-label="G&eacute;n&eacute;rer les re&ccedil;us">G&eacute;n&eacute;rer les PDF</button>
-          <button class="btn-action" id="btnEnvRecus" data-label="Envoyer par email" aria-label="Envoyer les re&ccedil;us" style="background:var(--gradient-green);">Envoyer par email</button>
+          <button class="btn-action" id="btnEnvRecus" data-label="Envoyer par email" aria-label="Envoyer les re&ccedil;us" style="background:var(--gradient-green);">&#128231; Email groupé</button>
+          <button class="btn-action" id="btnEnvRecusWA" data-label="Envoyer par WhatsApp" aria-label="Envoyer par WhatsApp" style="background:linear-gradient(135deg,#25D366,#128C7E);">&#128242; WhatsApp group&eacute;</button>
         </div>
         <div class="action-result" id="recusGenResult"></div>
         <div style="margin-top:16px;position:relative;">
@@ -2440,10 +2441,16 @@ function renderActions(container) {
     executeAction(this, document.getElementById('recusGenResult'), 'generer_recus');
   });
 
-  // Envoyer recus (avec confirmation)
+  // Envoyer recus par email (avec confirmation)
   document.getElementById('btnEnvRecus').addEventListener('click', function() {
-    if (!confirm('⚠️ ATTENTION : Cela va envoyer les reçus fiscaux par email à TOUS les donateurs qui n\'ont pas encore été notifiés.\n\nPour envoyer à une seule personne, utilisez "Renvoyer un reçu individuel" en dessous.\n\nConfirmer l\'envoi groupé ?')) return;
+    if (!confirm('⚠️ ATTENTION : Cela va envoyer les reçus fiscaux par EMAIL à TOUS les donateurs qui n\'ont pas encore été notifiés.\n\nPour envoyer à une seule personne, utilisez "Renvoyer un reçu individuel" en dessous.\n\nConfirmer l\'envoi groupé par email ?')) return;
     executeAction(this, document.getElementById('recusGenResult'), 'envoyer_recus');
+  });
+
+  // Envoyer recus par WhatsApp (avec confirmation)
+  document.getElementById('btnEnvRecusWA').addEventListener('click', function() {
+    if (!confirm('⚠️ ATTENTION : Cela va envoyer les reçus fiscaux par WHATSAPP à TOUS les donateurs avec un téléphone valide qui n\'ont pas encore reçu par WhatsApp.\n\nConfirmer l\'envoi groupé par WhatsApp ?')) return;
+    executeAction(this, document.getElementById('recusGenResult'), 'envoyer_recus_whatsapp');
   });
 
   // Renvoyer recu individuel — recherche par nom

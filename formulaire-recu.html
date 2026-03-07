@@ -384,8 +384,9 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyABLbrLkgZyLoUm4A68FPZ
 })();
 
 // Étape 1 : Vérifier les informations
-document.getElementById('btnVerify').addEventListener('click', function() {
+function doVerify() {
   const resEl = document.getElementById('result');
+
   const fields = {
     prenom: document.getElementById('prenom').value.trim(),
     nom: document.getElementById('nom').value.trim(),
@@ -421,6 +422,11 @@ document.getElementById('btnVerify').addEventListener('click', function() {
   document.querySelector('.info-box').style.display = 'none';
   document.getElementById('verifyPage').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Le setTimeout(100) laisse le navigateur finaliser l'autocomplete avant de lire les valeurs
+document.getElementById('btnVerify').addEventListener('click', function() {
+  setTimeout(doVerify, 100);
 });
 
 // Étape 2a : Retour au formulaire pour corriger

@@ -381,7 +381,7 @@ document.getElementById('formRecu').addEventListener('submit', async function(e)
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span> Envoi en cours...';
   resEl.className = 'result';
-  resEl.style.display = 'none';
+  resEl.removeAttribute('style');
 
   const data = {
     prenom, nom, email,

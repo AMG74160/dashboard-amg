@@ -210,9 +210,10 @@
   }
   .addr-item .addr-main { color: var(--text); }
   .addr-item .addr-ctx { color: var(--text-muted); font-size: 0.75rem; margin-top: 2px; }
-  .checkbox-group {
+  .payment-list { display: flex; flex-direction: column; gap: 6px; }
+  .payment-row {
     display: flex;
-    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
   }
   .cb-label {
@@ -226,6 +227,8 @@
     font-size: 0.85rem;
     cursor: pointer;
     transition: border-color 0.2s, background 0.2s;
+    flex: 1;
+    min-width: 0;
   }
   .cb-label:has(input:checked) {
     border-color: var(--blue);
@@ -234,6 +237,24 @@
   .cb-label input[type="checkbox"] {
     width: auto;
     accent-color: var(--blue);
+  }
+  .montant-input {
+    width: 90px !important;
+    flex-shrink: 0;
+    display: none;
+    padding: 8px 10px !important;
+    text-align: right;
+  }
+  .montant-input.visible { display: block; }
+  .payment-total {
+    margin-top: 10px;
+    padding: 10px 14px;
+    background: rgba(0,214,143,0.08);
+    border: 1px solid rgba(0,214,143,0.2);
+    border-radius: 8px;
+    font-size: 0.88rem;
+    color: var(--green);
+    text-align: right;
   }
   .verify-row {
     display: flex;
@@ -317,21 +338,18 @@
     <div class="form-card">
       <h2>Informations complémentaires</h2>
       <div class="field">
-        <label>Mode(s) de paiement (optionnel)</label>
-        <div class="checkbox-group">
-          <label class="cb-label"><input type="checkbox" name="modePaiement" value="CB"> Carte bancaire</label>
-          <label class="cb-label"><input type="checkbox" name="modePaiement" value="Virement"> Virement bancaire</label>
-          <label class="cb-label"><input type="checkbox" name="modePaiement" value="Espèces"> Espèces</label>
-          <label class="cb-label"><input type="checkbox" name="modePaiement" value="Chèque"> Chèque</label>
-          <label class="cb-label"><input type="checkbox" name="modePaiement" value="HelloAsso"> HelloAsso</label>
-          <label class="cb-label"><input type="checkbox" name="modePaiement" value="PayPal"> PayPal</label>
-          <label class="cb-label"><input type="checkbox" name="modePaiement" value="Autre"> Autre</label>
+        <label>Mode(s) de paiement et montant(s) (optionnel)</label>
+        <div class="hint" style="margin-bottom:8px;">Cochez vos modes de paiement, le montant apparaîtra automatiquement.</div>
+        <div class="payment-list">
+          <div class="payment-row"><label class="cb-label"><input type="checkbox" data-mode="CB"> Carte bancaire</label><input type="number" class="montant-input" data-mode="CB" placeholder="€" min="0" step="any" inputmode="decimal"></div>
+          <div class="payment-row"><label class="cb-label"><input type="checkbox" data-mode="Virement"> Virement bancaire</label><input type="number" class="montant-input" data-mode="Virement" placeholder="€" min="0" step="any" inputmode="decimal"></div>
+          <div class="payment-row"><label class="cb-label"><input type="checkbox" data-mode="Espèces"> Espèces</label><input type="number" class="montant-input" data-mode="Espèces" placeholder="€" min="0" step="any" inputmode="decimal"></div>
+          <div class="payment-row"><label class="cb-label"><input type="checkbox" data-mode="Chèque"> Chèque</label><input type="number" class="montant-input" data-mode="Chèque" placeholder="€" min="0" step="any" inputmode="decimal"></div>
+          <div class="payment-row"><label class="cb-label"><input type="checkbox" data-mode="HelloAsso"> HelloAsso</label><input type="number" class="montant-input" data-mode="HelloAsso" placeholder="€" min="0" step="any" inputmode="decimal"></div>
+          <div class="payment-row"><label class="cb-label"><input type="checkbox" data-mode="PayPal"> PayPal</label><input type="number" class="montant-input" data-mode="PayPal" placeholder="€" min="0" step="any" inputmode="decimal"></div>
+          <div class="payment-row"><label class="cb-label"><input type="checkbox" data-mode="Autre"> Autre</label><input type="number" class="montant-input" data-mode="Autre" placeholder="€" min="0" step="any" inputmode="decimal"></div>
         </div>
-      </div>
-      <div class="field">
-        <label>Montant total du don (optionnel)</label>
-        <input type="number" id="montant" name="montant" placeholder="Ex : 500" min="0" step="any" inputmode="decimal" style="max-width:200px;">
-        <div class="hint">En euros (€). Si plusieurs dons, indiquez le total.</div>
+        <div class="payment-total" id="paymentTotal" style="display:none;">Total : <strong id="paymentTotalValue">0</strong> €</div>
       </div>
       <div class="field">
         <label>Remarque (optionnel)</label>
@@ -425,6 +443,39 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyABLbrLkgZyLoUm4A68FPZ
   });
 })();
 
+// Gestion des checkboxes paiement : afficher/masquer montant + total
+document.querySelectorAll('.payment-row input[type="checkbox"]').forEach(cb => {
+  cb.addEventListener('change', function() {
+    const mode = this.dataset.mode;
+    const montantEl = document.querySelector('.montant-input[data-mode="'+mode+'"]');
+    if (this.checked) {
+      montantEl.classList.add('visible');
+      montantEl.focus();
+    } else {
+      montantEl.classList.remove('visible');
+      montantEl.value = '';
+    }
+    updatePaymentTotal();
+  });
+});
+document.querySelectorAll('.montant-input').forEach(el => {
+  el.addEventListener('input', updatePaymentTotal);
+});
+function updatePaymentTotal() {
+  let total = 0, count = 0;
+  document.querySelectorAll('.payment-row input[type="checkbox"]:checked').forEach(cb => {
+    const v = parseFloat(document.querySelector('.montant-input[data-mode="'+cb.dataset.mode+'"]').value);
+    if (v > 0) { total += v; count++; }
+  });
+  const totalEl = document.getElementById('paymentTotal');
+  if (count > 0) {
+    totalEl.style.display = 'block';
+    document.getElementById('paymentTotalValue').textContent = total.toFixed(2).replace('.00','');
+  } else {
+    totalEl.style.display = 'none';
+  }
+}
+
 // Forcer iOS Safari à mettre à jour les valeurs autofill dans le DOM
 function flushAutofill() {
   const inputs = document.querySelectorAll('#formRecu input, #formRecu textarea');
@@ -446,8 +497,15 @@ function getFormFields() {
     adresse: (fd.get('adresse')||'').trim(),
     codePostal: (fd.get('codePostal')||'').trim(),
     ville: (fd.get('ville')||'').trim(),
-    montant: (fd.get('montant')||'').trim(),
-    modePaiement: fd.getAll('modePaiement').join(', '),
+    paiements: (function() {
+      const items = [];
+      document.querySelectorAll('.payment-row input[type="checkbox"]:checked').forEach(cb => {
+        const mode = cb.dataset.mode;
+        const montant = document.querySelector('.montant-input[data-mode="'+mode+'"]').value || '';
+        items.push({ mode, montant });
+      });
+      return items;
+    })(),
     remarque: (fd.get('remarque')||'').trim(),
   };
 }
@@ -474,11 +532,16 @@ document.getElementById('btnVerify').addEventListener('click', function() {
   for (const [k, label] of labels) {
     html += '<div class="verify-row"><span class="verify-label">' + label + '</span><span class="verify-value">' + f[k].replace(/</g,'&lt;') + '</span></div>';
   }
-  if (f.montant) {
-    html += '<div class="verify-row"><span class="verify-label">Montant</span><span class="verify-value">' + f.montant + ' €</span></div>';
-  }
-  if (f.modePaiement) {
-    html += '<div class="verify-row"><span class="verify-label">Mode de paiement</span><span class="verify-value">' + f.modePaiement.replace(/</g,'&lt;') + '</span></div>';
+  if (f.paiements.length > 0) {
+    let total = 0;
+    f.paiements.forEach(p => {
+      const m = parseFloat(p.montant) || 0;
+      total += m;
+      html += '<div class="verify-row"><span class="verify-label">' + p.mode + '</span><span class="verify-value">' + (m > 0 ? m + ' €' : '—') + '</span></div>';
+    });
+    if (f.paiements.length > 1 && total > 0) {
+      html += '<div class="verify-row" style="border-top:1px solid var(--border);padding-top:8px;"><span class="verify-label" style="font-weight:600;">Total</span><span class="verify-value" style="color:var(--green);font-weight:700;">' + total + ' €</span></div>';
+    }
   }
   if (f.remarque) {
     html += '<div class="verify-row"><span class="verify-label">Remarque</span><span class="verify-value">' + f.remarque.replace(/</g,'&lt;') + '</span></div>';
@@ -512,7 +575,14 @@ document.getElementById('btnConfirm').addEventListener('click', async function()
   resEl.removeAttribute('style');
 
   const f = getFormFields();
-  const data = { ...f, modePaiement: f.modePaiement || '' };
+  const modePaiement = f.paiements.map(p => p.mode + (p.montant ? ' ('+p.montant+'€)' : '')).join(', ');
+  const montantTotal = f.paiements.reduce((s,p) => s + (parseFloat(p.montant)||0), 0);
+  const data = {
+    prenom: f.prenom, nom: f.nom, email: f.email, telephone: f.telephone,
+    adresse: f.adresse, codePostal: f.codePostal, ville: f.ville,
+    montant: montantTotal || '', modePaiement: modePaiement,
+    remarque: f.remarque,
+  };
 
   try {
     const url = API_URL + '?action=demande_recu&' + new URLSearchParams(data).toString();

@@ -2122,7 +2122,8 @@ function renderRecusFiscaux(container) {
         const statutClass = r.envoye === 'Oui' ? 'badge-complet' : 'badge-partiel';
         const statutText = r.envoye === 'Oui' ? 'Envoy&eacute;' : 'En attente';
         const modeText = r.modeEnvoi || '-';
-        const telShort = r.telephone && r.telephone !== 'INVALIDE' ? r.telephone.slice(-4) : '-';
+        const telStr = String(r.telephone || '');
+        const telShort = telStr && telStr !== 'INVALIDE' ? telStr.slice(-4) : '-';
         const pdfLink = r.lienPDF ? '<a href="' + r.lienPDF + '" target="_blank" style="color:var(--blue);">PDF</a>' : '-';
         return '<tr>' +
           '<td><strong>' + (r.prenom || '') + ' ' + (r.nom || '') + '</strong></td>' +

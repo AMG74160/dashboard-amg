@@ -620,10 +620,11 @@ body {
 .search-suggestion .sg-name { color: var(--text-primary); font-weight: 600; }
 .search-suggestion .sg-detail { color: var(--text-muted); font-size: 0.78rem; margin-top: 2px; }
 .action-result {
-  margin-top: 16px; padding: 16px; border-radius: var(--radius-sm);
+  margin-top: 12px; padding: 12px; border-radius: var(--radius-sm);
   background: rgba(255,255,255,0.03); font-family: var(--font-main);
   font-size: 0.85rem; color: var(--text-secondary); max-height: 400px;
-  overflow-y: auto; display: none; word-break: break-word;
+  overflow-y: auto; overflow-x: hidden; display: none; word-break: break-word;
+  max-width: 100%; box-sizing: border-box;
 }
 .action-result.show { display: block; }
 
@@ -653,13 +654,13 @@ body {
 }
 .toggle-switch input:disabled + .toggle-slider { opacity: 0.5; cursor: wait; }
 .sync-stat {
-  display: flex; align-items: center; gap: 6px; padding: 6px 8px;
+  display: flex; align-items: center; gap: 4px; padding: 5px 6px;
   background: rgba(255,255,255,0.04); border-radius: var(--radius-xs);
-  border: 1px solid var(--border-glass); min-height: 0;
+  border: 1px solid var(--border-glass); min-height: 0; overflow: hidden;
 }
-.sync-stat .sync-icon { font-size: 0.9rem; flex-shrink: 0; }
-.sync-stat span:nth-child(2) { flex: 1; color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.sync-stat strong { font-family: var(--font-mono); color: var(--text-primary); font-size: 0.8rem; white-space: nowrap; }
+.sync-stat .sync-icon { font-size: 0.8rem; flex-shrink: 0; }
+.sync-stat span:nth-child(2) { flex-shrink: 1; color: var(--text-muted); font-size: 0.68rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.sync-stat strong { font-family: var(--font-mono); color: var(--text-primary); font-size: 0.72rem; white-space: nowrap; flex-shrink: 0; }
 .spinner {
   display: inline-block; width: 18px; height: 18px;
   border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff;
@@ -2295,13 +2296,13 @@ async function lancerMiseAJour(btn, resEl) {
             ha.status === 'error' ? `<span style="color:var(--red);">Erreur : ${ha.message || 'inconnue'}</span>` :
             '<span style="color:var(--text-muted);">non ex\u00e9cut\u00e9</span>'}
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.75rem;">
-          <div class="sync-stat"><span class="sync-icon">&#128200;</span><span>Matches</span><strong>${f(d.matches)}</strong></div>
-          <div class="sync-stat"><span class="sync-icon">&#127873;</span><span>Spontan\u00e9s</span><strong>${f(d.spontanes)}</strong></div>
-          <div class="sync-stat"><span class="sync-icon">&#128176;</span><span>Total promis</span><strong>${f(d.totalPromis)}\u20AC</strong></div>
-          <div class="sync-stat"><span class="sync-icon">&#9989;</span><span>Total re\u00e7u</span><strong>${f(d.totalRecu)}\u20AC</strong></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.75rem;max-width:100%;overflow:hidden;">
+          <div class="sync-stat"><span class="sync-icon">&#128200;</span><span>Match</span><strong>${f(d.matches)}</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#127873;</span><span>Spont.</span><strong>${f(d.spontanes)}</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#128176;</span><span>Promis</span><strong>${f(d.totalPromis)}\u20AC</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#9989;</span><span>Re\u00e7u</span><strong>${f(d.totalRecu)}\u20AC</strong></div>
           <div class="sync-stat"><span class="sync-icon">&#128231;</span><span>Emails</span><strong>${f((d.emailsEnrichis?.paypal||0)+(d.emailsEnrichis?.helloasso||0)+(d.emailsEnrichis?.gala||0))}</strong></div>
-          <div class="sync-stat"><span class="sync-icon">&#128256;</span><span>Bi-campagne</span><strong>${f(d.biCampagne)}</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#128256;</span><span>Bi-camp.</span><strong>${f(d.biCampagne)}</strong></div>
         </div>
         ${r.generes > 0 || r.existants > 0 || r.regeneres > 0 ? `
         <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-glass);">

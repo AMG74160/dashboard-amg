@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demande de Reçu Fiscal — AMG</title>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --card: rgba(255,255,255,0.04);
+    --border: rgba(255,255,255,0.08);
+    --text: #e8eaf0;
+    --text-muted: #8b92a8;
+    --green: #00d68f;
+    --blue: #0075FF;
+    --red: #ff4d6a;
+    --radius: 12px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container {
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
+  }
+  .header {
+    text-align: center;
+    padding: 30px 0 20px;
+  }
+  .logo {
+    width: 64px; height: 64px;
+    background: linear-gradient(135deg, var(--blue), var(--green));
+    border-radius: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .header p {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(20px);
+  }
+  .form-card h2 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.75rem;
+  }
+  .field {
+    margin-bottom: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+  .field label .req {
+    color: var(--red);
+    margin-left: 2px;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--blue);
+  }
+  .field select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b92a8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+  .field select option {
+    background: #1a1e2e;
+    color: var(--text);
+  }
+  .field textarea {
+    resize: vertical;
+    min-height: 60px;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .field .hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .btn-submit {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, var(--blue), var(--green));
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    margin-top: 8px;
+  }
+  .btn-submit:hover { opacity: 0.9; }
+  .btn-submit:active { transform: scale(0.98); }
+  .btn-submit:disabled {
+    opacity: 0.5;
+    cursor: wait;
+  }
+  .result {
+    display: none;
+    padding: 16px;
+    border-radius: var(--radius);
+    margin-top: 16px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .result.success {
+    display: block;
+    background: rgba(0,214,143,0.1);
+    border: 1px solid rgba(0,214,143,0.3);
+    color: var(--green);
+  }
+  .result.error {
+    display: block;
+    background: rgba(255,77,106,0.1);
+    border: 1px solid rgba(255,77,106,0.3);
+    color: var(--red);
+  }
+  .footer {
+    text-align: center;
+    padding: 20px 0;
+    color: var(--text-muted);
+    font-size: 0.72rem;
+    line-height: 1.5;
+  }
+  .info-box {
+    background: rgba(0,117,255,0.08);
+    border: 1px solid rgba(0,117,255,0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 20px;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  .spinner {
+    display: inline-block; width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff;
+    border-radius: 50%; animation: spin 0.6s linear infinite;
+    vertical-align: middle; margin-right: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">&#128220;</div>
+    <h1>Demande de Reçu Fiscal</h1>
+    <p>Association Musulmane du Genevois</p>
+  </div>
+
+  <div class="info-box">
+    Ce formulaire est destiné aux donateurs qui souhaitent recevoir leur reçu fiscal.
+    Veuillez renseigner vos coordonnées afin que nous puissions vous identifier et vous envoyer votre reçu.
+  </div>
+
+  <form id="formRecu" novalidate>
+    <div class="form-card">
+      <h2>Identité</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>Prénom <span class="req">*</span></label>
+          <input type="text" id="prenom" required placeholder="Votre prénom" autocomplete="given-name">
+        </div>
+        <div class="field">
+          <label>Nom <span class="req">*</span></label>
+          <input type="text" id="nom" required placeholder="Votre nom" autocomplete="family-name">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <h2>Coordonnées</h2>
+      <div class="field">
+        <label>Email <span class="req">*</span></label>
+        <input type="email" id="email" required placeholder="votre@email.com" autocomplete="email">
+        <div class="hint">Adresse à laquelle vous recevrez votre reçu fiscal</div>
+      </div>
+      <div class="field">
+        <label>Téléphone</label>
+        <input type="tel" id="telephone" placeholder="06 12 34 56 78" autocomplete="tel">
+        <div class="hint">Pour recevoir le reçu aussi par WhatsApp (optionnel)</div>
+      </div>
+      <div class="field">
+        <label>Adresse postale</label>
+        <input type="text" id="adresse" placeholder="Numéro et rue" autocomplete="street-address">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Code postal</label>
+          <input type="text" id="codePostal" placeholder="74160" autocomplete="postal-code">
+        </div>
+        <div class="field">
+          <label>Ville</label>
+          <input type="text" id="ville" placeholder="Saint-Julien-en-Genevois" autocomplete="address-level2">
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <h2>Informations sur le don</h2>
+      <div class="field-row">
+        <div class="field">
+          <label>Montant du don <span class="req">*</span></label>
+          <input type="number" id="montant" required placeholder="100" min="1" step="0.01">
+        </div>
+        <div class="field">
+          <label>Mode de paiement <span class="req">*</span></label>
+          <select id="modePaiement" required>
+            <option value="">-- Choisir --</option>
+            <option value="Virement bancaire">Virement bancaire</option>
+            <option value="Carte bancaire (HelloAsso)">Carte bancaire (HelloAsso)</option>
+            <option value="Espèces">Espèces</option>
+            <option value="Chèque">Chèque</option>
+            <option value="PayPal">PayPal</option>
+            <option value="Autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Date du don <span class="req">*</span></label>
+        <input type="date" id="dateDon" required>
+      </div>
+      <div class="field">
+        <label>Type de donateur</label>
+        <select id="typeDonateur">
+          <option value="Particulier">Particulier</option>
+          <option value="Entreprise">Entreprise / Association</option>
+        </select>
+      </div>
+      <div class="field" id="fieldEntreprise" style="display:none;">
+        <label>Dénomination sociale</label>
+        <input type="text" id="denomination" placeholder="Nom de l'entreprise">
+      </div>
+      <div class="field">
+        <label>Remarque (optionnel)</label>
+        <textarea id="remarque" placeholder="Précision sur votre don, numéro de reçu si renvoi..."></textarea>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-submit" id="btnSubmit">Envoyer ma demande</button>
+    <div class="result" id="result"></div>
+  </form>
+
+  <div class="footer">
+    Association Musulmane du Genevois<br>
+    4 Rue des Résidences, 74160 Saint-Julien-en-Genevois<br>
+    RNA : W741003105<br><br>
+    RGPD : Vos données sont utilisées uniquement pour l'envoi de votre reçu fiscal.
+    Droit d'accès, rectification, suppression : amgstjulien@gmail.com
+  </div>
+</div>
+
+<script>
+const API_URL = 'https://script.google.com/macros/s/AKfycbyABLbrLkgZyLoUm4A68FPZOoVQbPPHY5rXA_wJZKRu8-VlcacWYowOcaoq-GmKFkdt/exec';
+
+document.getElementById('typeDonateur').addEventListener('change', function() {
+  document.getElementById('fieldEntreprise').style.display = this.value === 'Entreprise' ? 'block' : 'none';
+});
+
+document.getElementById('formRecu').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnSubmit');
+  const resEl = document.getElementById('result');
+
+  const prenom = document.getElementById('prenom').value.trim();
+  const nom = document.getElementById('nom').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const montant = document.getElementById('montant').value;
+  const modePaiement = document.getElementById('modePaiement').value;
+  const dateDon = document.getElementById('dateDon').value;
+
+  if (!prenom || !nom || !email || !montant || !modePaiement || !dateDon) {
+    resEl.className = 'result error';
+    resEl.textContent = 'Veuillez remplir tous les champs obligatoires (*)';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Envoi en cours...';
+  resEl.className = 'result';
+  resEl.style.display = 'none';
+
+  const data = {
+    prenom, nom, email,
+    telephone: document.getElementById('telephone').value.trim(),
+    adresse: document.getElementById('adresse').value.trim(),
+    codePostal: document.getElementById('codePostal').value.trim(),
+    ville: document.getElementById('ville').value.trim(),
+    montant, modePaiement, dateDon,
+    typeDonateur: document.getElementById('typeDonateur').value,
+    denomination: document.getElementById('denomination').value.trim(),
+    remarque: document.getElementById('remarque').value.trim(),
+  };
+
+  try {
+    const url = API_URL + '?action=demande_recu&' + new URLSearchParams(data).toString();
+    const resp = await fetch(url);
+    const result = await resp.json();
+    if (result.status === 'success') {
+      resEl.className = 'result success';
+      resEl.innerHTML = '<strong>Demande envoyée avec succès !</strong><br>Nous traiterons votre demande dans les plus brefs délais. Vous recevrez votre reçu fiscal par email' + (data.telephone ? ' et/ou WhatsApp' : '') + '.';
+      document.getElementById('formRecu').reset();
+    } else {
+      resEl.className = 'result error';
+      resEl.textContent = result.message || 'Une erreur est survenue.';
+    }
+  } catch (err) {
+    resEl.className = 'result error';
+    resEl.textContent = 'Erreur de connexion. Veuillez réessayer.';
+  }
+  btn.disabled = false;
+  btn.innerHTML = 'Envoyer ma demande';
+});
+</script>
+</body>
+</html>

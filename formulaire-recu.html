@@ -250,11 +250,11 @@
       <div class="field-row">
         <div class="field">
           <label>Prénom <span class="req">*</span></label>
-          <input type="text" id="prenom" required placeholder="Votre prénom" autocomplete="given-name">
+          <input type="text" id="prenom" name="prenom" required placeholder="Votre prénom" autocomplete="given-name">
         </div>
         <div class="field">
           <label>Nom <span class="req">*</span></label>
-          <input type="text" id="nom" required placeholder="Votre nom" autocomplete="family-name">
+          <input type="text" id="nom" name="nom" required placeholder="Votre nom" autocomplete="family-name">
         </div>
       </div>
     </div>
@@ -263,28 +263,28 @@
       <h2>Coordonnées</h2>
       <div class="field">
         <label>Email <span class="req">*</span></label>
-        <input type="email" id="email" required placeholder="votre@email.com" autocomplete="email">
+        <input type="email" id="email" name="email" required placeholder="votre@email.com" autocomplete="email">
         <div class="hint">Adresse à laquelle vous recevrez votre reçu fiscal</div>
       </div>
       <div class="field">
         <label>Téléphone <span class="req">*</span></label>
-        <input type="tel" id="telephone" required placeholder="06 12 34 56 78" autocomplete="tel">
+        <input type="tel" id="telephone" name="telephone" required placeholder="06 12 34 56 78" autocomplete="tel">
         <div class="hint">Pour recevoir le reçu aussi par WhatsApp</div>
       </div>
       <div class="field" style="position:relative;">
         <label>Adresse postale <span class="req">*</span></label>
-        <input type="text" id="adresse" required placeholder="Commencez à taper votre adresse..." autocomplete="off">
+        <input type="text" id="adresse" name="adresse" required placeholder="Commencez à taper votre adresse..." autocomplete="street-address">
         <div id="adresseSuggestions" class="addr-suggestions"></div>
         <div class="hint">Autocomplétion pour la France. Adresse étrangère : saisissez manuellement.</div>
       </div>
       <div class="field-row">
         <div class="field">
           <label>Code postal <span class="req">*</span></label>
-          <input type="text" id="codePostal" required placeholder="74160" autocomplete="postal-code">
+          <input type="text" id="codePostal" name="codePostal" required placeholder="74160" autocomplete="postal-code">
         </div>
         <div class="field">
           <label>Ville <span class="req">*</span></label>
-          <input type="text" id="ville" required placeholder="Saint-Julien-en-Genevois" autocomplete="address-level2">
+          <input type="text" id="ville" name="ville" required placeholder="Saint-Julien-en-Genevois" autocomplete="address-level2">
         </div>
       </div>
     </div>
@@ -293,7 +293,7 @@
       <h2>Remarque</h2>
       <div class="field">
         <label>Remarque (optionnel)</label>
-        <textarea id="remarque" placeholder="Précision sur votre don, numéro de reçu si renvoi..."></textarea>
+        <textarea id="remarque" name="remarque" placeholder="Précision sur votre don, numéro de reçu si renvoi..."></textarea>
       </div>
     </div>
 
@@ -383,21 +383,28 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyABLbrLkgZyLoUm4A68FPZ
   });
 })();
 
-// Étape 1 : Vérifier les informations
-function doVerify() {
-  const resEl = document.getElementById('result');
-
-  const fields = {
-    prenom: document.getElementById('prenom').value.trim(),
-    nom: document.getElementById('nom').value.trim(),
-    email: document.getElementById('email').value.trim(),
-    telephone: document.getElementById('telephone').value.trim(),
-    adresse: document.getElementById('adresse').value.trim(),
-    codePostal: document.getElementById('codePostal').value.trim(),
-    ville: document.getElementById('ville').value.trim(),
+// Lire les valeurs du formulaire via FormData (fiable avec autocomplete navigateur)
+function getFormFields() {
+  const form = document.getElementById('formRecu');
+  const fd = new FormData(form);
+  return {
+    prenom: (fd.get('prenom')||'').trim(),
+    nom: (fd.get('nom')||'').trim(),
+    email: (fd.get('email')||'').trim(),
+    telephone: (fd.get('telephone')||'').trim(),
+    adresse: (fd.get('adresse')||'').trim(),
+    codePostal: (fd.get('codePostal')||'').trim(),
+    ville: (fd.get('ville')||'').trim(),
+    remarque: (fd.get('remarque')||'').trim(),
   };
+}
 
-  if (!fields.prenom || !fields.nom || !fields.email || !fields.telephone || !fields.adresse || !fields.codePostal || !fields.ville) {
+// Étape 1 : Vérifier les informations
+document.getElementById('btnVerify').addEventListener('click', function() {
+  const resEl = document.getElementById('result');
+  const f = getFormFields();
+
+  if (!f.prenom || !f.nom || !f.email || !f.telephone || !f.adresse || !f.codePostal || !f.ville) {
     resEl.className = 'result error';
     resEl.textContent = 'Veuillez remplir tous les champs obligatoires (*)';
     return;
@@ -406,15 +413,13 @@ function doVerify() {
   resEl.className = 'result';
   resEl.removeAttribute('style');
 
-  const labels = { prenom:'Prénom', nom:'Nom', email:'Email', telephone:'Téléphone', adresse:'Adresse', codePostal:'Code postal', ville:'Ville' };
-  const remarque = document.getElementById('remarque').value.trim();
-
+  const labels = [['prenom','Prénom'],['nom','Nom'],['email','Email'],['telephone','Téléphone'],['adresse','Adresse'],['codePostal','Code postal'],['ville','Ville']];
   let html = '';
-  for (const [k, v] of Object.entries(fields)) {
-    html += '<div class="verify-row"><span class="verify-label">' + labels[k] + '</span><span class="verify-value">' + v.replace(/</g,'&lt;') + '</span></div>';
+  for (const [k, label] of labels) {
+    html += '<div class="verify-row"><span class="verify-label">' + label + '</span><span class="verify-value">' + f[k].replace(/</g,'&lt;') + '</span></div>';
   }
-  if (remarque) {
-    html += '<div class="verify-row"><span class="verify-label">Remarque</span><span class="verify-value">' + remarque.replace(/</g,'&lt;') + '</span></div>';
+  if (f.remarque) {
+    html += '<div class="verify-row"><span class="verify-label">Remarque</span><span class="verify-value">' + f.remarque.replace(/</g,'&lt;') + '</span></div>';
   }
 
   document.getElementById('verifyData').innerHTML = html;
@@ -422,11 +427,6 @@ function doVerify() {
   document.querySelector('.info-box').style.display = 'none';
   document.getElementById('verifyPage').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// Le setTimeout(100) laisse le navigateur finaliser l'autocomplete avant de lire les valeurs
-document.getElementById('btnVerify').addEventListener('click', function() {
-  setTimeout(doVerify, 100);
 });
 
 // Étape 2a : Retour au formulaire pour corriger
@@ -448,17 +448,8 @@ document.getElementById('btnConfirm').addEventListener('click', async function()
   resEl.className = 'result';
   resEl.removeAttribute('style');
 
-  const data = {
-    prenom: document.getElementById('prenom').value.trim(),
-    nom: document.getElementById('nom').value.trim(),
-    email: document.getElementById('email').value.trim(),
-    telephone: document.getElementById('telephone').value.trim(),
-    adresse: document.getElementById('adresse').value.trim(),
-    codePostal: document.getElementById('codePostal').value.trim(),
-    ville: document.getElementById('ville').value.trim(),
-    modePaiement: 'Virement bancaire',
-    remarque: document.getElementById('remarque').value.trim(),
-  };
+  const f = getFormFields();
+  const data = { ...f, modePaiement: 'Virement bancaire' };
 
   try {
     const url = API_URL + '?action=demande_recu&' + new URLSearchParams(data).toString();

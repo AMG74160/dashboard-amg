@@ -383,7 +383,16 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyABLbrLkgZyLoUm4A68FPZ
   });
 })();
 
-// Lire les valeurs du formulaire via FormData (fiable avec autocomplete navigateur)
+// Forcer iOS Safari à mettre à jour les valeurs autofill dans le DOM
+function flushAutofill() {
+  const inputs = document.querySelectorAll('#formRecu input, #formRecu textarea');
+  inputs.forEach(el => {
+    el.focus();
+    el.blur();
+  });
+}
+
+// Lire les valeurs du formulaire
 function getFormFields() {
   const form = document.getElementById('formRecu');
   const fd = new FormData(form);
@@ -401,14 +410,17 @@ function getFormFields() {
 
 // Étape 1 : Vérifier les informations
 document.getElementById('btnVerify').addEventListener('click', function() {
-  const resEl = document.getElementById('result');
-  const f = getFormFields();
+  // Flush autofill iOS puis lire après un court délai
+  flushAutofill();
+  setTimeout(function() {
+    const resEl = document.getElementById('result');
+    const f = getFormFields();
 
-  if (!f.prenom || !f.nom || !f.email || !f.telephone || !f.adresse || !f.codePostal || !f.ville) {
-    resEl.className = 'result error';
-    resEl.textContent = 'Veuillez remplir tous les champs obligatoires (*)';
-    return;
-  }
+    if (!f.prenom || !f.nom || !f.email || !f.telephone || !f.adresse || !f.codePostal || !f.ville) {
+      resEl.className = 'result error';
+      resEl.textContent = 'Veuillez remplir tous les champs obligatoires (*)';
+      return;
+    }
 
   resEl.className = 'result';
   resEl.removeAttribute('style');
@@ -427,6 +439,7 @@ document.getElementById('btnVerify').addEventListener('click', function() {
   document.querySelector('.info-box').style.display = 'none';
   document.getElementById('verifyPage').style.display = 'block';
   window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 150);
 });
 
 // Étape 2a : Retour au formulaire pour corriger

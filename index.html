@@ -653,13 +653,13 @@ body {
 }
 .toggle-switch input:disabled + .toggle-slider { opacity: 0.5; cursor: wait; }
 .sync-stat {
-  display: flex; align-items: center; gap: 8px; padding: 10px 12px;
+  display: flex; align-items: center; gap: 6px; padding: 6px 8px;
   background: rgba(255,255,255,0.04); border-radius: var(--radius-xs);
-  border: 1px solid var(--border-glass);
+  border: 1px solid var(--border-glass); min-height: 0;
 }
-.sync-stat .sync-icon { font-size: 1.1rem; }
-.sync-stat span:nth-child(2) { flex: 1; color: var(--text-muted); font-size: 0.8rem; }
-.sync-stat strong { font-family: var(--font-mono); color: var(--text-primary); font-size: 0.9rem; }
+.sync-stat .sync-icon { font-size: 0.9rem; flex-shrink: 0; }
+.sync-stat span:nth-child(2) { flex: 1; color: var(--text-muted); font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sync-stat strong { font-family: var(--font-mono); color: var(--text-primary); font-size: 0.8rem; white-space: nowrap; }
 .spinner {
   display: inline-block; width: 18px; height: 18px;
   border: 2px solid rgba(255,255,255,0.2); border-top-color: #fff;
@@ -2285,30 +2285,31 @@ async function lancerMiseAJour(btn, resEl) {
       const f = n => Number(n||0).toLocaleString('fr-FR');
       resEl.style.borderLeft = '3px solid var(--green)';
       resEl.innerHTML = `
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
-          <span style="font-size:1.5rem;">&#9989;</span>
-          <strong style="color:var(--green);">${result.message}</strong>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+          <span style="font-size:1.2rem;">&#9989;</span>
+          <strong style="color:var(--green);font-size:0.85rem;">${result.message}</strong>
         </div>
-        <div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid var(--border-glass);font-size:0.82rem;">
+        <div style="margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--border-glass);font-size:0.75rem;">
           <strong>&#127760; Import HelloAsso :</strong>
           ${ha.status === 'ok' ? `<span style="color:var(--green);">${f(ha.nouveaux)} nouveau(x)</span> sur ${f(ha.total)} paiement(s) API` :
             ha.status === 'error' ? `<span style="color:var(--red);">Erreur : ${ha.message || 'inconnue'}</span>` :
             '<span style="color:var(--text-muted);">non ex\u00e9cut\u00e9</span>'}
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:0.82rem;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.75rem;">
           <div class="sync-stat"><span class="sync-icon">&#128200;</span><span>Matches</span><strong>${f(d.matches)}</strong></div>
           <div class="sync-stat"><span class="sync-icon">&#127873;</span><span>Spontan\u00e9s</span><strong>${f(d.spontanes)}</strong></div>
-          <div class="sync-stat"><span class="sync-icon">&#128176;</span><span>Total promis</span><strong>${f(d.totalPromis)} \u20AC</strong></div>
-          <div class="sync-stat"><span class="sync-icon">&#9989;</span><span>Total re\u00e7u</span><strong>${f(d.totalRecu)} \u20AC</strong></div>
-          <div class="sync-stat"><span class="sync-icon">&#128231;</span><span>Emails enrichis</span><strong>${f((d.emailsEnrichis?.paypal||0)+(d.emailsEnrichis?.helloasso||0)+(d.emailsEnrichis?.gala||0))}</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#128176;</span><span>Total promis</span><strong>${f(d.totalPromis)}\u20AC</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#9989;</span><span>Total re\u00e7u</span><strong>${f(d.totalRecu)}\u20AC</strong></div>
+          <div class="sync-stat"><span class="sync-icon">&#128231;</span><span>Emails</span><strong>${f((d.emailsEnrichis?.paypal||0)+(d.emailsEnrichis?.helloasso||0)+(d.emailsEnrichis?.gala||0))}</strong></div>
           <div class="sync-stat"><span class="sync-icon">&#128256;</span><span>Bi-campagne</span><strong>${f(d.biCampagne)}</strong></div>
         </div>
-        ${r.generes > 0 || r.existants > 0 ? `
-        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-glass);">
-          <strong style="font-size:0.85rem;">&#128220; Re\u00e7us fiscaux</strong>
-          <div style="display:flex;gap:16px;margin-top:6px;font-size:0.82rem;">
+        ${r.generes > 0 || r.existants > 0 || r.regeneres > 0 ? `
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-glass);">
+          <strong style="font-size:0.78rem;">&#128220; Re\u00e7us fiscaux</strong>
+          <div style="display:flex;gap:10px;margin-top:4px;font-size:0.75rem;flex-wrap:wrap;">
             <span style="color:var(--green);">${f(r.generes || 0)} g\u00e9n\u00e9r\u00e9(s)</span>
-            <span style="color:var(--text-muted);">${f(r.existants || 0)} existant(s)</span>
+            ${(r.regeneres || 0) > 0 ? `<span style="color:var(--orange);">&#9851;&#65039; ${f(r.regeneres)} reg\u00e9n\u00e9r\u00e9(s)</span>` : ''}
+            <span style="color:var(--text-muted);">${f(r.existants || 0)} inchang\u00e9(s)</span>
             ${r.erreurs > 0 ? `<span style="color:var(--red);">${f(r.erreurs)} erreur(s)</span>` : ''}
           </div>
         </div>` : ''}

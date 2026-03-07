@@ -2440,8 +2440,9 @@ function renderActions(container) {
     executeAction(this, document.getElementById('recusGenResult'), 'generer_recus');
   });
 
-  // Envoyer recus
+  // Envoyer recus (avec confirmation)
   document.getElementById('btnEnvRecus').addEventListener('click', function() {
+    if (!confirm('⚠️ ATTENTION : Cela va envoyer les reçus fiscaux par email à TOUS les donateurs qui n\'ont pas encore été notifiés.\n\nPour envoyer à une seule personne, utilisez "Renvoyer un reçu individuel" en dessous.\n\nConfirmer l\'envoi groupé ?')) return;
     executeAction(this, document.getElementById('recusGenResult'), 'envoyer_recus');
   });
 

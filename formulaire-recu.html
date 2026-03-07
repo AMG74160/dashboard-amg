@@ -280,29 +280,7 @@
     </div>
 
     <div class="form-card">
-      <h2>Informations sur le don</h2>
-      <div class="field-row">
-        <div class="field">
-          <label>Montant du don</label>
-          <input type="number" id="montant" placeholder="100" min="1" step="0.01">
-          <div class="hint">Approximatif, pour nous aider à vous identifier</div>
-        </div>
-        <div class="field">
-          <label>Date du don</label>
-          <input type="date" id="dateDon">
-        </div>
-      </div>
-      <div class="field">
-        <label>Type de donateur</label>
-        <select id="typeDonateur">
-          <option value="Particulier">Particulier</option>
-          <option value="Entreprise">Entreprise / Association</option>
-        </select>
-      </div>
-      <div class="field" id="fieldEntreprise" style="display:none;">
-        <label>Dénomination sociale</label>
-        <input type="text" id="denomination" placeholder="Nom de l'entreprise">
-      </div>
+      <h2>Remarque</h2>
       <div class="field">
         <label>Remarque (optionnel)</label>
         <textarea id="remarque" placeholder="Précision sur votre don, numéro de reçu si renvoi..."></textarea>
@@ -381,10 +359,6 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbyABLbrLkgZyLoUm4A68FPZ
   });
 })();
 
-document.getElementById('typeDonateur').addEventListener('change', function() {
-  document.getElementById('fieldEntreprise').style.display = this.value === 'Entreprise' ? 'block' : 'none';
-});
-
 document.getElementById('formRecu').addEventListener('submit', async function(e) {
   e.preventDefault();
   const btn = document.getElementById('btnSubmit');
@@ -393,9 +367,6 @@ document.getElementById('formRecu').addEventListener('submit', async function(e)
   const prenom = document.getElementById('prenom').value.trim();
   const nom = document.getElementById('nom').value.trim();
   const email = document.getElementById('email').value.trim();
-  const montant = document.getElementById('montant').value;
-  const dateDon = document.getElementById('dateDon').value;
-
   if (!prenom || !nom || !email) {
     resEl.className = 'result error';
     resEl.textContent = 'Veuillez remplir tous les champs obligatoires (*)';
@@ -413,9 +384,7 @@ document.getElementById('formRecu').addEventListener('submit', async function(e)
     adresse: document.getElementById('adresse').value.trim(),
     codePostal: document.getElementById('codePostal').value.trim(),
     ville: document.getElementById('ville').value.trim(),
-    montant, modePaiement: 'Virement bancaire', dateDon,
-    typeDonateur: document.getElementById('typeDonateur').value,
-    denomination: document.getElementById('denomination').value.trim(),
+    modePaiement: 'Virement bancaire',
     remarque: document.getElementById('remarque').value.trim(),
   };
 
